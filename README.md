@@ -2,12 +2,24 @@
 
 Aplicación web para controlar el stock del almacén de Verdnatura en la nave de
 Holanda. La pantalla principal es la nave en 3D: se recorre como un mapa y, al
-tocar una zona, la cámara vuela hasta ella.
+tocar una zona u objeto, la cámara vuela hasta ella y se ve qué hay guardado
+allí.
 
-> En reconstrucción: la versión anterior (listas de artículos, estanterías,
-> historial) se ha retirado. Ahora mismo hay la nave a escala con su
-> distribución real, que se edita desde el propio mapa; el contenido de cada
-> zona (stock) se irá definiendo.
+## Catálogo de artículos
+
+En `/articulos` (botón de la caja en el mapa) está todo lo que tenemos: cada
+artículo con sus fotos, categoría, unidad en la que se cuenta (carros, cajas,
+rollos...), descripción y las características que se quieran apuntar (nombre y
+valor libres). El stock es la cantidad que hay en cada zona del mapa; el total
+es la suma.
+
+Desde el mapa, al entrar en una zona, el panel «Qué hay aquí» lista los
+artículos de esa zona con su cantidad. «Añadir» crea un artículo nuevo ya
+colocado en la zona o pone aquí uno que ya existe.
+
+Las fotos se reducen en el navegador (lado mayor 1600 px, JPEG) antes de
+subirlas al bucket `fotos-articulos` de Supabase. Las que se suben y luego se
+cancelan, o se quitan de un artículo, se borran del almacén.
 
 ## Editar el mapa
 
@@ -49,6 +61,18 @@ Three.js con React Three Fiber, drei y camera-controls.
 La escala es provisional (1:300, unos 110 × 34 m) porque el plano no trae
 cotas: cuando haya una medida real basta con reescalar los números de
 `plano.ts`.
+
+## Catálogo (`src/articulos`)
+
+| Archivo | Qué contiene |
+| --- | --- |
+| `modelo.ts` | Tipos `Articulo`, `Existencia` y `Caracteristica`, unidades y características sugeridas, URL pública de las fotos. |
+| `useArticulos.ts` | Lectura de artículos con sus existencias, guardado (artículo, existencias por zona y limpieza de fotos), borrado y subida de fotos. |
+| `imagen.ts` | Reduce las fotos antes de subirlas. |
+| `FichaArticulo.tsx` | La ficha lateral para crear o editar un artículo; se usa en el catálogo y en el mapa. |
+
+Tablas en Supabase: `articulos` y `existencias` (cantidad de un artículo en un
+elemento del mapa; si se borra la zona, la existencia queda «sin ubicar»).
 
 ## Variables de entorno
 

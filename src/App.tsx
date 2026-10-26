@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Nave from "./pages/Nave.tsx";
+import Articulos from "./pages/Articulos.tsx";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Nave />} />
             <Route path="/zona/:zonaId" element={<Nave />} />
+            <Route path="/articulos" element={<Articulos />} />
+            <Route path="/articulos/:articuloId" element={<Articulos />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </ErrorBoundary>

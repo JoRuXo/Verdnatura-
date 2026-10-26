@@ -69,8 +69,6 @@ export const COLORES = [
   "#f97316", "#eab308", "#22c55e", "#b45309", "#78716c", "#475569",
 ];
 
-export const esNavegable = (e: Elemento) => e.tipo !== "puesto";
-
 /** Las líneas y estanterías van a lo largo de su lado más largo. */
 export const orientacion = (r: Rect): "x" | "y" => (r.x1 - r.x0 >= r.y1 - r.y0 ? "x" : "y");
 
@@ -134,7 +132,7 @@ export const aFila = (e: Elemento, orden: number): TablesInsert<"elementos_mapa"
 export const agruparPorCategoria = (elementos: Elemento[]) => {
   const orden = CATEGORIAS_DE_SERIE.map((c) => c.nombre);
   const grupos = new Map<string, Elemento[]>();
-  for (const e of elementos.filter(esNavegable)) grupos.set(e.categoria, [...(grupos.get(e.categoria) ?? []), e]);
+  for (const e of elementos) grupos.set(e.categoria, [...(grupos.get(e.categoria) ?? []), e]);
   return [...grupos.entries()]
     .sort(([a], [b]) => {
       const ia = orden.indexOf(a);

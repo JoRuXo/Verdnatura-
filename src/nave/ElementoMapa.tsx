@@ -78,7 +78,7 @@ type Props = {
 export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion }: Props) {
   const [encima, setEncima] = useState(false);
   const esObjeto = elemento.tipo === "puesto";
-  useCursor(encima && !activa && (!!edicion || !esObjeto), edicion ? "move" : "pointer");
+  useCursor(encima && !activa, edicion ? "move" : "pointer");
 
   const { color } = elemento;
   const { x0, y0, x1, y1 } = elemento.area;
@@ -87,10 +87,13 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
   const arrastre = useArrastre(elemento, edicion);
 
   const base = useRef<THREE.MeshBasicMaterial>(null);
+  // Los objetos ya se ven por sus piezas: el suelo solo marca la selección o el ratón encima
   const opacidadBase = esObjeto
     ? edicion
       ? encima || edicion.seleccionado ? 0.25 : 0.1
-      : 0
+      : encima || activa
+        ? 0.3
+        : 0
     : atenuada
       ? 0.05
       : activa
@@ -102,24 +105,20 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
             : 0.22;
   useFundido(base, opacidadBase, true);
 
-  // Fuera de edición los objetos no reciben eventos: el mapa se mueve por encima de ellos
-  const eventos =
-    edicion || !esObjeto
-      ? {
-          onPointerOver: (e: ThreeEvent<PointerEvent>) => {
-            e.stopPropagation();
-            setEncima(true);
-          },
-          onPointerOut: () => setEncima(false),
-          onClick: (e: ThreeEvent<MouseEvent>) => {
-            e.stopPropagation();
-            // En edición el clic selecciona (lo hace el arrastre); fuera, entra en la zona
-            if (edicion || e.delta > 6) return;
-            onElegir(elemento.clave);
-          },
-          ...(edicion ? arrastre.manejadores("mover") : {}),
-        }
-      : {};
+  const eventos = {
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      setEncima(true);
+    },
+    onPointerOut: () => setEncima(false),
+    onClick: (e: ThreeEvent<MouseEvent>) => {
+      e.stopPropagation();
+      // En edición el clic selecciona (lo hace el arrastre); fuera, entra en la zona
+      if (edicion || e.delta > 6) return;
+      onElegir(elemento.clave);
+    },
+    ...(edicion ? arrastre.manejadores("mover") : {}),
+  };
 
   const borde = useMemo(
     () => [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]].map(([x, y]) => punto3(x, y, 0.04)),
@@ -158,7 +157,7 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
         <NombreSuelo elemento={elemento} m={m} contorno={contorno} atenuado={atenuada} eventos={eventos} />
       )}
 
-      {/* De lejos el nombre del suelo no se lee: al pasar por encima sale un rótulo */}
+      {/* De lejos el nombre del suelo no se lee: al pasar por encima sale un rótulo (los objetos ya llevan el suyo) */}
       {encima && !activa && !esObjeto && (
         <Html position={[cx, 1.6, cz]} center zIndexRange={[8, 6]} style={{ pointerEvents: "none" }}>
           <div

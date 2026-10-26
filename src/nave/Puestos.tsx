@@ -94,7 +94,7 @@ function piezasDe(e: Elemento): Grupo[] {
 
 type Props = { elemento: Elemento; opacidad: number; oculta: boolean };
 
-/** Un objeto del mapa (PC, cargador, carros...): se ve y se edita, pero no se entra en él. */
+/** Un objeto del mapa (PC, cargador, carros...): se dibuja con piezas y lleva su rótulo fijo. */
 export function PiezasPuesto({ elemento, opacidad, oculta }: Props) {
   const grupos = useMemo(() => piezasDe(elemento), [elemento]);
   const { x0, y0, x1, y1 } = elemento.area;

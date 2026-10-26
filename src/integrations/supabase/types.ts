@@ -76,212 +76,81 @@ export type Database = {
       }
       articulos: {
         Row: {
-          cajas: number
+          caracteristicas: Json
+          categoria: string
           created_at: string
-          descripcion: string | null
-          fecha: string | null
+          descripcion: string
+          fotos: string[]
           id: string
-          lote: string | null
           nombre: string
-          proveedor: string | null
-          stock_minimo: number
-          categoria: string | null
-          unidades_por_caja: number
+          unidad: string
           updated_at: string
         }
         Insert: {
-          cajas?: number
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string | null
-          id?: string
-          lote?: string | null
-          nombre: string
-          proveedor?: string | null
-          stock_minimo?: number
-          categoria?: string | null
-          unidades_por_caja?: number
-          updated_at?: string
-        }
-        Update: {
-          cajas?: number
-          created_at?: string
-          descripcion?: string | null
-          fecha?: string | null
-          id?: string
-          lote?: string | null
-          nombre?: string
-          proveedor?: string | null
-          stock_minimo?: number
-          categoria?: string | null
-          unidades_por_caja?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      estanterias: {
-        Row: {
-          created_at: string
-          descripcion: string | null
-          id: string
-          nombre: string
-          pasillo: number | null
-          posicion: number | null
-        }
-        Insert: {
-          created_at?: string
-          descripcion?: string | null
-          id?: string
-          nombre: string
-          pasillo?: number | null
-          posicion?: number | null
-        }
-        Update: {
-          created_at?: string
-          descripcion?: string | null
-          id?: string
-          nombre?: string
-          pasillo?: number | null
-          posicion?: number | null
-        }
-        Relationships: []
-      }
-      movimientos: {
-        Row: {
-          articulo_id: string | null
-          articulo_nombre: string | null
-          cantidad_antes: number | null
-          cantidad_despues: number | null
-          created_at: string
-          descripcion: string
-          id: string
-          tipo: string
-          ubicacion_destino: string | null
-          ubicacion_origen: string | null
-        }
-        Insert: {
-          articulo_id?: string | null
-          articulo_nombre?: string | null
-          cantidad_antes?: number | null
-          cantidad_despues?: number | null
-          created_at?: string
-          descripcion: string
-          id?: string
-          tipo: string
-          ubicacion_destino?: string | null
-          ubicacion_origen?: string | null
-        }
-        Update: {
-          articulo_id?: string | null
-          articulo_nombre?: string | null
-          cantidad_antes?: number | null
-          cantidad_despues?: number | null
+          caracteristicas?: Json
+          categoria?: string
           created_at?: string
           descripcion?: string
+          fotos?: string[]
           id?: string
-          tipo?: string
-          ubicacion_destino?: string | null
-          ubicacion_origen?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "movimientos_articulo_id_fkey"
-            columns: ["articulo_id"]
-            isOneToOne: false
-            referencedRelation: "articulos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      palets: {
-        Row: {
-          articulo_id: string | null
-          cantidad: number
-          created_at: string
-          id: string
-          slot: number
-          ubicacion_id: string
-          updated_at: string
-        }
-        Insert: {
-          articulo_id?: string | null
-          cantidad?: number
-          created_at?: string
-          id?: string
-          slot: number
-          ubicacion_id: string
+          nombre: string
+          unidad?: string
           updated_at?: string
         }
         Update: {
-          articulo_id?: string | null
-          cantidad?: number
+          caracteristicas?: Json
+          categoria?: string
           created_at?: string
+          descripcion?: string
+          fotos?: string[]
           id?: string
-          slot?: number
-          ubicacion_id?: string
+          nombre?: string
+          unidad?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "palets_articulo_id_fkey"
-            columns: ["articulo_id"]
-            isOneToOne: false
-            referencedRelation: "articulos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "palets_ubicacion_id_fkey"
-            columns: ["ubicacion_id"]
-            isOneToOne: false
-            referencedRelation: "ubicaciones"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      ubicaciones: {
+      existencias: {
         Row: {
-          articulo_id: string | null
+          articulo_id: string
           cantidad: number
           created_at: string
-          estanteria_id: string
+          elemento_id: string | null
           id: string
-          nivel: string
-          posicion: number
+          nota: string
           updated_at: string
         }
         Insert: {
-          articulo_id?: string | null
+          articulo_id: string
           cantidad?: number
           created_at?: string
-          estanteria_id: string
+          elemento_id?: string | null
           id?: string
-          nivel: string
-          posicion: number
+          nota?: string
           updated_at?: string
         }
         Update: {
-          articulo_id?: string | null
+          articulo_id?: string
           cantidad?: number
           created_at?: string
-          estanteria_id?: string
+          elemento_id?: string | null
           id?: string
-          nivel?: string
-          posicion?: number
+          nota?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ubicaciones_articulo_id_fkey"
+            foreignKeyName: "existencias_articulo_id_fkey"
             columns: ["articulo_id"]
             isOneToOne: false
             referencedRelation: "articulos"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ubicaciones_estanteria_id_fkey"
-            columns: ["estanteria_id"]
+            foreignKeyName: "existencias_elemento_id_fkey"
+            columns: ["elemento_id"]
             isOneToOne: false
-            referencedRelation: "estanterias"
+            referencedRelation: "elementos_mapa"
             referencedColumns: ["id"]
           },
         ]
@@ -291,15 +160,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      crear_estanteria_con_ubicaciones: {
-        Args: {
-          p_descripcion?: string
-          p_nombre: string
-          p_pasillo?: number
-          p_posicion?: number
-        }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

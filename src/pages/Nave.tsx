@@ -2,7 +2,20 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { ChevronRight, Grid3x3, ListTree, Maximize, Moon, MousePointerClick, Pencil, Route, Sun, X } from "lucide-react";
+import {
+  ChevronRight,
+  Grid3x3,
+  ListTree,
+  Maximize,
+  Moon,
+  MousePointerClick,
+  Package,
+  Pencil,
+  Plus,
+  Route,
+  Sun,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -25,21 +38,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { esGamaLigera } from "@/nave/dispositivo";
-import {
-  TIPOS,
-  agruparPorCategoria,
-  duplicar,
-  esNavegable,
-  nuevoElemento,
-  referenciaDe,
-  textoSentido,
-  type Elemento,
-} from "@/nave/elementos";
+import { TIPOS, agruparPorCategoria, duplicar, nuevoElemento, referenciaDe, textoSentido, type Elemento } from "@/nave/elementos";
 import { guardarMapa, useMapa } from "@/nave/useMapa";
 import { useEditor } from "@/nave/useEditor";
 import { PanelEdicion } from "@/nave/PanelEdicion";
 import { BarraEdicion } from "@/nave/BarraEdicion";
 import type { EdicionEscena, RefCentro } from "@/nave/EscenaNave";
+import { useArticulos } from "@/articulos/useArticulos";
+import { articuloVacio, urlFoto, type Articulo } from "@/articulos/modelo";
+import { FichaArticulo } from "@/articulos/FichaArticulo";
 
 // Three.js pesa bastante: se carga aparte para que la página aparezca enseguida
 const EscenaNave = lazy(() => import("@/nave/EscenaNave"));
@@ -99,14 +106,102 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode })
   );
 }
 
-function PanelZona({ zona, onVolver }: { zona: Elemento; onVolver: () => void }) {
+/** Lo que hay guardado en una zona: cada artículo con su cantidad allí. */
+function QueHayAqui({
+  zona,
+  articulos,
+  cargando,
+  onAbrir,
+  onNuevo,
+}: {
+  zona: Elemento;
+  articulos: Articulo[];
+  cargando: boolean;
+  onAbrir: (a: Articulo, ponerAqui: boolean) => void;
+  onNuevo: () => void;
+}) {
+  const estaAqui = (a: Articulo) => a.existencias.some((e) => e.elementoId === zona.id);
+  const aqui = articulos.filter(estaAqui).map((a) => ({
+    a,
+    cantidad: a.existencias.filter((e) => e.elementoId === zona.id).reduce((s, e) => s + e.cantidad, 0),
+  }));
+  const otros = articulos.filter((a) => !estaAqui(a));
+
+  return (
+    <section className="mt-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">Qué hay aquí</h3>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Añadir
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="max-h-[50vh] w-60 overflow-y-auto">
+            <DropdownMenuItem onSelect={onNuevo}>
+              <Plus className="mr-2 h-4 w-4" /> Artículo nuevo…
+            </DropdownMenuItem>
+            {otros.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Uno que ya existe</DropdownMenuLabel>
+                {otros.map((a) => (
+                  <DropdownMenuItem key={a.id} onSelect={() => onAbrir(a, true)}>
+                    <span className="truncate">{a.nombre}</span>
+                    <span className="ml-auto pl-2 text-xs text-muted-foreground">{a.categoria}</span>
+                  </DropdownMenuItem>
+                ))}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {cargando && <p className="text-sm text-muted-foreground">Cargando…</p>}
+      {!cargando && aqui.length === 0 && (
+        <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+          No hay nada apuntado en esta zona.
+        </p>
+      )}
+      {aqui.length > 0 && (
+        <ul className="divide-y rounded-lg border">
+          {aqui.map(({ a, cantidad }) => (
+            <li key={a.id}>
+              <button
+                type="button"
+                onClick={() => onAbrir(a, false)}
+                className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-accent"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
+                  {a.fotos[0] ? (
+                    <img src={urlFoto(a.fotos[0])} alt="" loading="lazy" className="h-full w-full object-contain" />
+                  ) : (
+                    <Package className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{a.nombre}</span>
+                  {a.categoria && <span className="block truncate text-xs text-muted-foreground">{a.categoria}</span>}
+                </span>
+                <span className="shrink-0 text-right text-sm">
+                  <span className="font-semibold">{cantidad}</span> <span className="text-xs text-muted-foreground">{a.unidad}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function PanelZona({ zona, onVolver, children }: { zona: Elemento; onVolver: () => void; children?: ReactNode }) {
   const sentido = textoSentido(zona);
   return (
     <aside
       key={zona.id}
       className={cn(
-        "absolute z-20 rounded-xl border bg-card/95 p-4 shadow-xl backdrop-blur",
-        "inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:w-80",
+        "absolute z-20 overflow-y-auto rounded-xl border bg-card/95 p-4 shadow-xl backdrop-blur",
+        "inset-x-3 bottom-3 max-h-[60dvh] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:max-h-[calc(100dvh-6rem)] sm:w-80",
         "animate-in fade-in slide-in-from-bottom-6 duration-700 sm:slide-in-from-bottom-0 sm:slide-in-from-right-6",
       )}
     >
@@ -129,6 +224,7 @@ function PanelZona({ zona, onVolver }: { zona: Elemento; onVolver: () => void })
         {zona.muelle && <Dato etiqueta="Llega a">{zona.muelle}</Dato>}
         <Dato etiqueta="Posición en el plano">{referenciaDe(zona.area)}</Dato>
       </dl>
+      {children}
       <Button className="mt-4 w-full" variant="secondary" onClick={onVolver}>
         Volver a la nave
       </Button>
@@ -199,10 +295,15 @@ function Ayuda({ onCerrar }: { onCerrar: () => void }) {
   );
 }
 
-/** El usuario está escribiendo en un campo: los atajos de teclado no deben saltar. */
-const escribiendo = (e: KeyboardEvent) => {
+/**
+ * El usuario está escribiendo en un campo o tiene abierta una ventana o un menú
+ * (Esc ya los cierra): los atajos de teclado del mapa no deben saltar.
+ */
+const teclaAjena = (e: KeyboardEvent) => {
   const t = e.target as HTMLElement | null;
-  return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+  if (!t) return false;
+  const escribiendo = t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable;
+  return escribiendo || !!t.closest?.("[role=dialog], [role=alertdialog], [role=menu], [role=listbox]");
 };
 
 const Nave = () => {
@@ -211,6 +312,8 @@ const Nave = () => {
   const { resolvedTheme, setTheme } = useTheme();
   const mapa = useMapa();
   const editor = useEditor(mapa.elementos);
+  const articulos = useArticulos();
+  const [ficha, setFicha] = useState<{ articulo: Articulo; esNuevo: boolean } | null>(null);
   const [referencias, setReferencias] = useState(true);
   const [vistaKey, setVistaKey] = useState(0);
   const [ayuda, setAyuda] = useState(true);
@@ -221,7 +324,7 @@ const Nave = () => {
   const centroRef: RefCentro = useRef(null);
 
   const elementos = editor.activo ? editor.borrador : mapa.elementos;
-  const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId && esNavegable(e));
+  const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId);
 
   // Una dirección de zona que no existe vuelve a la vista general (cuando ya se ha cargado el mapa)
   useEffect(() => {
@@ -275,7 +378,7 @@ const Nave = () => {
   // Atajos del modo edición: Supr borra, Ctrl+Z deshace, Esc quita la selección
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (escribiendo(e)) return;
+      if (teclaAjena(e)) return;
       if (editor.activo) {
         if ((e.key === "Delete" || e.key === "Backspace") && editor.seleccion) {
           e.preventDefault();
@@ -316,6 +419,21 @@ const Nave = () => {
   );
 
   const categorias = useMemo(() => [...new Set(elementos.map((e) => e.categoria).filter(Boolean))], [elementos]);
+  const categoriasArticulos = useMemo(
+    () => [...new Set((articulos.data ?? []).map((a) => a.categoria).filter(Boolean))].sort(),
+    [articulos.data],
+  );
+
+  /** Abre la ficha de un artículo; con `ponerAqui` le añade una fila para esta zona. */
+  const abrirArticulo = (a: Articulo, ponerAqui: boolean) => {
+    if (!zona) return;
+    setFicha({
+      articulo: ponerAqui
+        ? { ...a, existencias: [...a.existencias, { id: crypto.randomUUID(), elementoId: zona.id, cantidad: 0, nota: "" }] }
+        : a,
+      esNuevo: false,
+    });
+  };
   const oscuro = resolvedTheme === "dark";
   const seleccionado = editor.seleccionado;
 
@@ -359,6 +477,9 @@ const Nave = () => {
         </div>
 
         <div className="pointer-events-auto flex shrink-0 gap-1.5 sm:gap-2">
+          <BotonFlotante titulo="Artículos" onClick={() => navigate("/articulos")}>
+            <Package className="h-4 w-4" />
+          </BotonFlotante>
           <MenuZonas
             elementos={elementos}
             activa={editor.activo ? (editor.seleccion ?? undefined) : zona?.id}
@@ -381,7 +502,13 @@ const Nave = () => {
           >
             <Maximize className="h-4 w-4" />
           </BotonFlotante>
-          <BotonFlotante titulo="Flechas de flujo en movimiento" activo={flujos} onClick={() => setFlujos((f) => !f)}>
+          {/* En el móvil no cabe y allí las flechas van quietas de serie (batería) */}
+          <BotonFlotante
+            titulo="Flechas de flujo en movimiento"
+            activo={flujos}
+            className="hidden sm:inline-flex"
+            onClick={() => setFlujos((f) => !f)}
+          >
             <Route className="h-4 w-4" />
           </BotonFlotante>
           <BotonFlotante titulo="Referencias del plano (A–K, 1–4)" activo={referencias} onClick={() => setReferencias((r) => !r)}>
@@ -399,7 +526,26 @@ const Nave = () => {
         </div>
       )}
 
-      {zona && <PanelZona zona={zona} onVolver={volver} />}
+      {zona && (
+        <PanelZona zona={zona} onVolver={volver}>
+          <QueHayAqui
+            zona={zona}
+            articulos={articulos.data ?? []}
+            cargando={articulos.isLoading}
+            onAbrir={abrirArticulo}
+            onNuevo={() => setFicha({ articulo: articuloVacio(zona.id), esNuevo: true })}
+          />
+        </PanelZona>
+      )}
+      {ficha && (
+        <FichaArticulo
+          inicial={ficha.articulo}
+          esNuevo={ficha.esNuevo}
+          elementos={mapa.elementos}
+          categorias={categoriasArticulos}
+          onCerrar={() => setFicha(null)}
+        />
+      )}
       {ayuda && !zona && !editor.activo && <Ayuda onCerrar={() => setAyuda(false)} />}
 
       {editor.activo && seleccionado && (

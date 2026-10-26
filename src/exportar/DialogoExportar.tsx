@@ -11,6 +11,7 @@ import { useArticulos } from "@/articulos/useArticulos";
 import { useMapa } from "@/nave/useMapa";
 import { nombreFichero, prepararInforme } from "./informe";
 import { descargar, miniaturas } from "./miniaturas";
+import { cargarMarca } from "./marca";
 
 type Formato = "excel" | "pdf";
 
@@ -19,13 +20,13 @@ const FORMATOS: Record<Formato, { nombre: string; texto: string; icono: typeof F
     nombre: "Excel",
     texto: "Resumen, cada artículo y cada zona en hojas separadas. Para filtrar, ordenar o seguir trabajando.",
     icono: FileSpreadsheet,
-    color: "text-emerald-600",
+    color: "text-marca-lima-oscuro",
   },
   pdf: {
     nombre: "PDF",
     texto: "Listo para imprimir o mandar por WhatsApp o correo. No se puede editar.",
     icono: FileText,
-    color: "text-red-600",
+    color: "text-peligro",
   },
 };
 
@@ -47,14 +48,16 @@ export function DialogoExportar({ abierto, onCerrar }: { abierto: boolean; onCer
         ? await miniaturas(lista, 120, (hechas, total) => setProgreso(`Preparando fotos ${hechas} de ${total}…`))
         : new Map<string, string>();
       setProgreso(`Creando el ${FORMATOS[formato].nombre}…`);
+      // Logo de la marca y, para el PDF, la letra Poppins
+      const marca = await cargarMarca(formato === "pdf");
       const nombre = nombreFichero(informe.fecha);
       if (formato === "excel") {
         const { crearExcel } = await import("./excel");
-        const datos = await crearExcel(informe, fotos);
+        const datos = await crearExcel(informe, fotos, marca.logo);
         descargar(new Blob([datos], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `${nombre}.xlsx`);
       } else {
         const { crearPdf } = await import("./pdf");
-        descargar(new Blob([crearPdf(informe, fotos)], { type: "application/pdf" }), `${nombre}.pdf`);
+        descargar(new Blob([crearPdf(informe, fotos, marca)], { type: "application/pdf" }), `${nombre}.pdf`);
       }
       toast.success(`${FORMATOS[formato].nombre} descargado`, { description: `${nombre}.${formato === "excel" ? "xlsx" : "pdf"}` });
       onCerrar();

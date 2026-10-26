@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Html, Line, Text, useCursor } from "@react-three/drei";
 import type CameraControlsImpl from "camera-controls";
-import fuenteSuelo from "@fontsource/inter/files/inter-latin-700-normal.woff?url";
+import fuenteSuelo from "@fontsource/poppins/files/poppins-latin-700-normal.woff?url";
 import { NAVE, aEscena, aPlano, type Rect } from "./plano";
 import { punto3 } from "./geometria";
 import { Instancias } from "./piezas";

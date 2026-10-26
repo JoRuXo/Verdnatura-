@@ -13,7 +13,37 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Poppins", "Arial", "Helvetica", "sans-serif"],
+      },
       colors: {
+        marca: {
+          lima: "hsl(var(--marca-lima))",
+          "lima-oscuro": "hsl(var(--marca-lima-oscuro))",
+          logo: "hsl(var(--marca-logo))",
+          tinta: "hsl(var(--marca-tinta))",
+          gris: "hsl(var(--marca-gris))",
+          azulado: "hsl(var(--marca-azulado))",
+          salvia: "hsl(var(--marca-salvia))",
+        },
+        aviso: {
+          DEFAULT: "hsl(var(--aviso))",
+          suave: "hsl(var(--aviso-suave))",
+          texto: "hsl(var(--aviso-texto))",
+          borde: "hsl(var(--aviso-borde))",
+        },
+        peligro: {
+          DEFAULT: "hsl(var(--peligro))",
+          suave: "hsl(var(--peligro-suave))",
+          texto: "hsl(var(--peligro-texto))",
+          borde: "hsl(var(--peligro-borde))",
+        },
+        correcto: {
+          DEFAULT: "hsl(var(--correcto))",
+          suave: "hsl(var(--correcto-suave))",
+          texto: "hsl(var(--correcto-texto))",
+          borde: "hsl(var(--correcto-borde))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

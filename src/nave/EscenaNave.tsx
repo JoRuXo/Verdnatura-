@@ -230,7 +230,7 @@ export default function EscenaNave({
     >
       <color attach="background" args={[paleta.fondo]} />
       <fog attach="fog" args={[paleta.fondo, 260, 700]} />
-      <hemisphereLight args={[oscuro ? "#b4c4d6" : "#ffffff", oscuro ? "#1a2230" : "#b8c2cc", oscuro ? 0.9 : 0.9]} />
+      <hemisphereLight args={[oscuro ? "#c8ccd2" : "#ffffff", oscuro ? "#1a1a1a" : "#c4c6ca", 0.9]} />
       <directionalLight
         position={[35, 70, 45]}
         intensity={oscuro ? 1.25 : 1.6}

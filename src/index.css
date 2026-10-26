@@ -2,107 +2,141 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/*
+Sistema de diseño: la marca oficial de verdnatura.es (tema Avada de la web).
+Todos los colores en HSL. Los de la marca, tal cual los usa la web:
+  lima #8CC63F (botones y acentos)   tinta #1A1A1A (texto y pie)
+  gris #3D3D3D · gris azulado #747A87 · bordes #E0DEDE · fondos #EEF0F2 / #F8F8F8
+  logo: verde #93D50A y negro #131313
+Tipografía: Poppins (400, 500, 600 y 700), con el espaciado de letra de la web.
 */
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 86 54% 51%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 13% 94%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 0 0% 97%;
+    --muted-foreground: 221 8% 49%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 13% 94%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 45%;
+    --success: 86 54% 51%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 0 3% 87%;
+    --input: 0 3% 87%;
+    --ring: 86 54% 51%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
+
+    /* Marca */
+    --marca-lima: 86 54% 51%;
+    --marca-lima-oscuro: 86 62% 30%;
+    --marca-logo: 80 91% 44%;
+    --marca-tinta: 0 0% 10%;
+    --marca-gris: 0 0% 24%;
+    --marca-azulado: 221 8% 49%;
+    --marca-salvia: 81 36% 65%;
+
+    /* Estados: aviso (ámbar), peligro (rojo) y correcto (lima de la marca) */
+    --aviso: 38 92% 50%;
+    --aviso-suave: 48 100% 96%;
+    --aviso-texto: 22 78% 26%;
+    --aviso-borde: 46 97% 65%;
+    --peligro: 0 72% 51%;
+    --peligro-suave: 0 86% 97%;
+    --peligro-texto: 0 70% 35%;
+    --peligro-borde: 0 96% 89%;
+    --correcto: 86 54% 51%;
+    --correcto-suave: 87 61% 93%;
+    --correcto-texto: 85 78% 27%;
+    --correcto-borde: 86 48% 78%;
 
     --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 0 0% 24%;
+    --sidebar-primary: 86 54% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 13% 94%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 3% 87%;
+    --sidebar-ring: 86 54% 51%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 97%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 97%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 97%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 86 54% 51%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 97%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 221 8% 66%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 97%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 142 71% 40%;
+    --success: 86 54% 51%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 86 54% 51%;
+
+    --marca-lima-oscuro: 86 54% 62%;
+
+    --aviso-suave: 32 60% 12%;
+    --aviso-texto: 48 96% 80%;
+    --aviso-borde: 32 70% 28%;
+    --peligro-suave: 0 50% 13%;
+    --peligro-texto: 0 93% 85%;
+    --peligro-borde: 0 55% 30%;
+    --correcto-suave: 86 35% 13%;
+    --correcto-texto: 86 60% 72%;
+    --correcto-borde: 86 35% 30%;
+
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 86 54% 51%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 0 0% 22%;
+    --sidebar-ring: 86 54% 51%;
   }
 }
 
@@ -112,6 +146,8 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    /* Como la web: Poppins con un poco de aire entre letras */
+    letter-spacing: 0.015em;
   }
 }

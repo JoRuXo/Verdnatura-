@@ -19,7 +19,7 @@ function Etiqueta({ nombre, categoria, tipo, color, url }: { nombre: string; cat
     void QRCode.toString(url, { type: "svg", margin: 0, errorCorrectionLevel: "M" }).then(setSvg);
   }, [url]);
   return (
-    <div className="flex break-inside-avoid flex-col overflow-hidden rounded-lg border-2 bg-white text-slate-900" style={{ borderColor: color }}>
+    <div className="flex break-inside-avoid flex-col overflow-hidden rounded-lg border-2 bg-white text-marca-tinta" style={{ borderColor: color }}>
       <div className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white" style={{ backgroundColor: color }}>
         {categoria || tipo}
       </div>
@@ -27,7 +27,7 @@ function Etiqueta({ nombre, categoria, tipo, color, url }: { nombre: string; cat
         <div className="h-24 w-24 shrink-0 [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: svg }} />
         <div className="min-w-0">
           <div className="text-xl font-bold leading-tight">{nombre}</div>
-          <div className="mt-1 text-[11px] leading-snug text-slate-500">Escanéalo para ver qué hay aquí y contar.</div>
+          <div className="mt-1 text-[11px] leading-snug text-marca-azulado">Escanéalo para ver qué hay aquí y contar.</div>
         </div>
       </div>
     </div>

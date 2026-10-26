@@ -197,7 +197,7 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
                 : "Solo se ve en el mapa: no sale en «Zonas» ni se puede entrar."}
             </span>
             {!e.almacen && articulosAqui > 0 && (
-              <span className="block text-xs font-medium text-amber-700 dark:text-amber-400">
+              <span className="block text-xs font-medium text-aviso-texto">
                 Tiene {articulosAqui === 1 ? "1 artículo apuntado" : `${articulosAqui} artículos apuntados`}: siguen aquí, pero no se podrá entrar a
                 contarlos.
               </span>

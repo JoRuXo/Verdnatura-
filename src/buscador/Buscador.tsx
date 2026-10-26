@@ -216,7 +216,7 @@ export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, 
                   </p>
                 )}
                 {bajoMinimo.length === 0 && articulos.some((a) => a.stockMinimo != null) && (
-                  <p className="flex items-center gap-2 px-4 pb-3 text-xs text-emerald-700 dark:text-emerald-400">
+                  <p className="flex items-center gap-2 px-4 pb-3 text-xs text-correcto-texto">
                     <CircleCheck className="h-3.5 w-3.5" /> Ningún artículo está por debajo de su mínimo.
                   </p>
                 )}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -47,9 +47,7 @@ export function DialogoAutor() {
         onPointerDownOutside={(e) => !autor && e.preventDefault()}
       >
         <DialogHeader>
-          <div className="mx-auto mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary sm:mx-0">
-            <UserRound className="h-6 w-6" />
-          </div>
+          <Logo className="mx-auto mb-3 h-7 sm:mx-0" />
           <DialogTitle>{autor ? "Cambiar de nombre" : "¿Quién eres?"}</DialogTitle>
           <DialogDescription>
             Tu nombre se guarda en este dispositivo y sale en el historial junto a cada cambio que hagas. No hace falta contraseña.

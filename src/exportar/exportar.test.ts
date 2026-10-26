@@ -8,6 +8,15 @@ import { prepararInforme, tinte } from "./informe";
 import { crearExcel } from "./excel";
 import { crearPdf } from "./pdf";
 
+// La marca, leída del disco como la cargaría el navegador
+const MARCA = {
+  logo: `data:image/png;base64,${readFileSync("public/marca/logo-verdnatura-blanco.png").toString("base64")}`,
+  fuentes: {
+    normal: readFileSync("src/exportar/fuentes/Poppins-Regular.ttf").toString("base64"),
+    negrita: readFileSync("src/exportar/fuentes/Poppins-Bold.ttf").toString("base64"),
+  },
+};
+
 const articulo = (a: Partial<Articulo> & Pick<Articulo, "id" | "nombre">): Articulo => ({
   categoria: "",
   descripcion: "",
@@ -78,14 +87,19 @@ describe("informe de stock", () => {
     await wb.xlsx.load(datos);
     expect(wb.worksheets.map((h) => h.name)).toEqual(["Resumen", "Por artículo", "Por zona"]);
     const hoja = wb.getWorksheet("Por artículo")!;
-    expect(hoja.getCell("A4").value).toBe("Artículo");
-    expect(hoja.getCell("A5").value).toBe("Carro CC");
-    expect(hoja.getCell("C5").value).toBe(30);
+    expect(hoja.getCell("A5").value).toBe("Artículo");
+    expect(hoja.getCell("A6").value).toBe("Carro CC");
+    expect(hoja.getCell("C6").value).toBe(30);
+    expect(hoja.getCell("A2").value).toBe("Stock por artículo");
   });
 
-  it("genera un PDF", () => {
-    const datos = new Uint8Array(crearPdf(informe));
-    expect(new TextDecoder().decode(datos.slice(0, 5))).toBe("%PDF-");
+  it("genera un PDF, con la letra y el logo de la marca o sin ellos", () => {
+    for (const recursos of [{}, MARCA]) {
+      const datos = new Uint8Array(crearPdf(informe, new Map(), recursos));
+      expect(new TextDecoder().decode(datos.slice(0, 5))).toBe("%PDF-");
+    }
+    const conMarca = new TextDecoder("latin1").decode(new Uint8Array(crearPdf(informe, new Map(), MARCA)));
+    expect(conMarca).toContain("Poppins");
   });
 
   // Con EJEMPLOS_EXPORTAR=<carpeta> guarda los ficheros para mirarlos a ojo
@@ -93,7 +107,7 @@ describe("informe de stock", () => {
     const carpeta = process.env.EJEMPLOS_EXPORTAR!;
     const foto = process.env.FOTO_EJEMPLO ? readFileSync(process.env.FOTO_EJEMPLO, "utf8") : null;
     const fotos = new Map(foto ? [["carro", foto]] : []);
-    writeFileSync(join(carpeta, "ejemplo.xlsx"), Buffer.from(await crearExcel(informe, fotos)));
-    writeFileSync(join(carpeta, "ejemplo.pdf"), Buffer.from(crearPdf(informe, fotos)));
+    writeFileSync(join(carpeta, "ejemplo.xlsx"), Buffer.from(await crearExcel(informe, fotos, MARCA.logo)));
+    writeFileSync(join(carpeta, "ejemplo.pdf"), Buffer.from(crearPdf(informe, fotos, MARCA)));
   });
 });

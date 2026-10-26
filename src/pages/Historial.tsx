@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { MenuGeneral } from "@/components/MenuGeneral";
+import { Logo } from "@/components/Logo";
 import { useArticulos } from "@/articulos/useArticulos";
 import { useMapa } from "@/nave/useMapa";
 import { ListaHistorial } from "@/historial/ListaHistorial";
@@ -48,19 +49,24 @@ const Historial = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
-          <Button variant="ghost" size="sm" asChild className="gap-1.5 px-2">
-            <Link to="/">
-              <ArrowLeft className="h-4 w-4" /> Mapa
-            </Link>
-          </Button>
+          <Link
+            to="/"
+            aria-label="Volver al mapa"
+            title="Volver al mapa"
+            className="flex items-center gap-2 rounded-full py-1 pr-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <Logo className="h-7 sm:h-6" compacto />
+          </Link>
+          <span className="h-6 w-px bg-border" aria-hidden />
           <h1 className="text-lg font-bold">Historial</h1>
           <span className="flex-1" />
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
             <Link to="/articulos">Artículos</Link>
           </Button>
-          <MenuGeneral className="h-9 w-9 bg-background shadow-none backdrop-blur-none" />
+          <MenuGeneral className="h-9 w-9" />
         </div>
       </header>
 

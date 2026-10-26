@@ -22,7 +22,7 @@ function Diferencia({ n }: { n: number | null }) {
     <span
       className={cn(
         "shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold tabular-nums",
-        n > 0 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+        n > 0 ? "bg-correcto-suave text-correcto-texto" : "bg-peligro-suave text-peligro-texto",
       )}
     >
       {n > 0 ? `+${n}` : `−${-n}`}

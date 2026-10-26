@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { MenuGeneral } from "@/components/MenuGeneral";
+import { Logo } from "@/components/Logo";
 import { esGamaLigera } from "@/nave/dispositivo";
 import { agruparPorCategoria, duplicar, nuevoElemento, type Elemento } from "@/nave/elementos";
 import type { Rect } from "@/nave/plano";
@@ -80,8 +81,8 @@ function BotonFlotante({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-10 w-10 bg-card/90 shadow-md backdrop-blur",
-        activo && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+        "h-9 w-9 sm:h-10 sm:w-10",
+        activo && "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
         className,
       )}
     >
@@ -104,7 +105,7 @@ function MenuZonas({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 gap-2 bg-card/90 px-3 shadow-md backdrop-blur" aria-label="Zonas" title="Zonas">
+        <Button variant="outline" className="h-9 w-9 gap-2 px-0 sm:h-10 sm:w-10 lg:w-auto lg:px-4" aria-label="Zonas" title="Zonas">
           <ListTree className="h-4 w-4" />
           <span className="hidden lg:inline">Zonas</span>
         </Button>
@@ -396,11 +397,13 @@ const Nave = () => {
         />
       </Suspense>
 
-      {/* Cabecera y miga de pan */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-4">
-        <div className="pointer-events-auto min-w-0 rounded-xl border bg-card/90 px-3 py-2 shadow-md backdrop-blur">
-          <div className="text-base font-bold leading-tight">Verdnatura</div>
-          <nav className="flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground" aria-label="Ubicación">
+      {/* Cabecera: barra blanca con el logo y la miga de pan, como la de verdnatura.es */}
+      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 border-b bg-card/95 px-3 py-2 shadow-sm backdrop-blur sm:gap-4 sm:px-5 sm:py-2.5">
+        <div className="min-w-0">
+          <button type="button" onClick={volver} aria-label="Vista general de la nave" className="block">
+            <Logo className="h-5 sm:h-6" />
+          </button>
+          <nav className="mt-1 flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground" aria-label="Ubicación">
             <button type="button" onClick={volver} className={cn("hover:text-foreground", !zona && !articuloFoco && "text-foreground")}>
               Nave Holland
             </button>
@@ -413,20 +416,20 @@ const Nave = () => {
             {editor.activo && (
               <>
                 <ChevronRight className="h-3 w-3 shrink-0" />
-                <span className="truncate font-medium text-primary">Editando</span>
+                <span className="truncate font-medium text-marca-lima-oscuro">Editando</span>
               </>
             )}
           </nav>
         </div>
 
-        <div className="pointer-events-auto flex shrink-0 gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 gap-1 sm:gap-2">
           {!editor.activo && (
             <Button
               variant="outline"
               onClick={() => setBuscando(true)}
               aria-label="Buscar"
               title="Buscar (Ctrl+K)"
-              className="h-10 w-10 gap-2 bg-card/90 px-0 shadow-md backdrop-blur lg:w-auto lg:px-3"
+              className="h-9 w-9 gap-2 px-0 sm:h-10 sm:w-10 lg:w-auto lg:px-4"
             >
               <Search className="h-4 w-4" />
               <span className="hidden text-muted-foreground lg:inline">Buscar…</span>
@@ -470,7 +473,7 @@ const Nave = () => {
           >
             <Grid3x3 className="h-4 w-4" />
           </BotonFlotante>
-          <MenuGeneral>
+          <MenuGeneral className="h-9 w-9 sm:h-10 sm:w-10">
             <div className="sm:hidden">
               <DropdownMenuItem onSelect={vistaGeneral} className="gap-2">
                 <Maximize className="h-4 w-4" /> Vista general
@@ -488,7 +491,7 @@ const Nave = () => {
       </header>
 
       {mapa.error && (
-        <div className="absolute left-1/2 top-20 z-20 w-[min(92vw,30rem)] -translate-x-1/2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 shadow dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <div className="absolute left-1/2 top-20 z-20 w-[min(92vw,30rem)] -translate-x-1/2 rounded-lg border border-aviso-borde bg-aviso-suave px-3 py-2 text-xs text-aviso-texto shadow">
           No se ha podido leer el mapa guardado: se ve el de serie y no se puede editar. ({mapa.error})
         </div>
       )}

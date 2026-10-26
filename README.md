@@ -104,6 +104,21 @@ en las líneas de flujo (entradas, vuelta de vacíos, tumba, frío, plantas, CC
 tumbados, boxes), los PC y los cargadores: se ven y se editan, pero no se
 entra en ellos.
 
+## Imagen de marca
+
+La app usa la imagen oficial de [verdnatura.es](https://verdnatura.es):
+- **Letra**: Poppins (400, 500, 600 y 700), con el espaciado de letra de la web.
+- **Colores**: verde lima `#8CC63F` para botones y acentos, casi negro
+  `#1A1A1A` para el texto, grises `#3D3D3D`, `#747A87`, `#E0DEDE`,
+  `#EEF0F2` y `#F8F8F8`. Están como variables en `src/index.css` (`marca-*`) y los
+  avisos tienen las suyas (`aviso`, `peligro`, `correcto`), en claro y en oscuro.
+- **Logo** (`public/marca`): el de la web y una versión con «Verd» en blanco para el
+  tema oscuro y la banda negra del Excel y el PDF. El icono de la app y el favicon
+  son las cuatro hojas de la web.
+- **Botones** en píldora, como los de la web.
+- El Excel y el PDF llevan la banda negra con el logo, Poppins (incrustada en el
+  PDF, `src/exportar/fuentes`, licencia OFL) y el verde lima.
+
 ## Stack
 
 Vite + React + TypeScript + Tailwind + shadcn/ui + Supabase, y para el 3D

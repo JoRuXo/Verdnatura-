@@ -139,7 +139,7 @@ function FilaStock({ a, zona, onAbrir }: { a: Articulo; zona: Elemento; onAbrir:
         <span className="min-w-0">
           <span className="line-clamp-2 text-sm font-medium leading-tight">{a.nombre}</span>
           <span className="block truncate text-xs text-muted-foreground">
-            {bajo ? <span className="font-medium text-red-600 dark:text-red-400">Bajo mínimo · </span> : null}
+            {bajo ? <span className="font-medium text-peligro">Bajo mínimo · </span> : null}
             {a.categoria || a.unidad}
           </span>
         </span>
@@ -178,7 +178,7 @@ function FilaStock({ a, zona, onAbrir }: { a: Articulo; zona: Elemento; onAbrir:
               await enviar();
               setEscribiendo(String(existencia.cantidad + pendienteRef.current));
             }}
-            className={cn("flex w-14 flex-col items-center rounded-md py-0.5 leading-tight hover:bg-accent", pendiente !== 0 && "text-primary")}
+            className={cn("flex w-14 flex-col items-center rounded-md py-0.5 leading-tight hover:bg-accent", pendiente !== 0 && "text-marca-lima-oscuro")}
             title="Escribir la cantidad"
           >
             <span className="text-base font-semibold tabular-nums">{cantidad}</span>
@@ -366,8 +366,8 @@ export function PanelArticulo({
             </li>
           ))}
           {fuera > 0 && (
-            <li className="flex items-center gap-2.5 bg-amber-50 px-3 py-2 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+            <li className="flex items-center gap-2.5 bg-aviso-suave px-3 py-2 text-aviso-texto">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-aviso" />
               <span className="flex-1 text-sm">Sin ubicar</span>
               <span className="text-sm font-semibold tabular-nums">{fuera}</span>
             </li>

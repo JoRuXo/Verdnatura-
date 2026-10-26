@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { puntuar } from "@/lib/texto";
 import { MenuGeneral } from "@/components/MenuGeneral";
+import { Logo } from "@/components/Logo";
 import { useMapa } from "@/nave/useMapa";
 import { useArticulos } from "@/articulos/useArticulos";
 import { ESTADOS, articuloVacio, estadoStock, sinUbicar, textoBuscable, tieneSinUbicar, total, urlFoto } from "@/articulos/modelo";
@@ -27,9 +28,9 @@ function Chip({ activo, aviso, onClick, children }: { activo: boolean; aviso?: "
         activo
           ? "border-primary bg-primary text-primary-foreground"
           : aviso === "rojo"
-            ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+            ? "border-peligro-borde bg-peligro-suave text-peligro-texto hover:bg-peligro-suave/70"
             : aviso === "ambar"
-              ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+              ? "border-aviso-borde bg-aviso-suave text-aviso-texto hover:bg-aviso-suave/70"
               : "bg-card hover:bg-accent",
       )}
     >
@@ -84,22 +85,27 @@ const Articulos = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
-          <Button variant="ghost" size="sm" asChild className="gap-1.5 px-2">
-            <Link to="/">
-              <ArrowLeft className="h-4 w-4" /> Mapa
-            </Link>
-          </Button>
+          <Link
+            to="/"
+            aria-label="Volver al mapa"
+            title="Volver al mapa"
+            className="flex items-center gap-2 rounded-full py-1 pr-1 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <Logo className="h-7 sm:h-6" compacto />
+          </Link>
+          <span className="h-6 w-px bg-border" aria-hidden />
           <h1 className="text-lg font-bold">Artículos</h1>
           <span className="flex-1" />
           <Button variant="outline" size="sm" className="hidden gap-1.5 sm:inline-flex" onClick={() => setExportando(true)}>
             <FileDown className="h-4 w-4" /> Exportar
           </Button>
           <Button size="sm" className="gap-1.5" onClick={() => navigate("/articulos/nuevo")}>
-            <Plus className="h-4 w-4" /> Nuevo
+            <Plus className="h-4 w-4" /> <span className="hidden min-[400px]:inline">Nuevo</span>
           </Button>
-          <MenuGeneral className="h-9 w-9 bg-background shadow-none backdrop-blur-none" />
+          <MenuGeneral className="h-9 w-9" />
         </div>
       </header>
 
@@ -108,7 +114,7 @@ const Articulos = () => {
           <button
             type="button"
             onClick={() => setFiltro({ tipo: "sin-ubicar" })}
-            className="flex w-full items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-left text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+            className="flex w-full items-center gap-3 rounded-xl border border-aviso-borde bg-aviso-suave p-3 text-left text-sm text-aviso-texto"
           >
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span className="flex-1">
@@ -199,7 +205,7 @@ const Articulos = () => {
                       </span>
                     )}
                   </div>
-                  {fuera > 0 && <div className="text-xs font-medium text-amber-700 dark:text-amber-400">{fuera} sin ubicar</div>}
+                  {fuera > 0 && <div className="text-xs font-medium text-aviso-texto">{fuera} sin ubicar</div>}
                 </div>
               </button>
             );

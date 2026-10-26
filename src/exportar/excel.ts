@@ -1,57 +1,75 @@
 import ExcelJS from "exceljs";
 import { ETIQUETA_ESTADO, SIN_CATEGORIA, categoriaZona, fechaLarga, tinte, type Informe } from "./informe";
+import { PROPORCION_LOGO } from "./marca";
 import type { Estado } from "@/articulos/modelo";
 
-// Excel del stock: una hoja de resumen con los números clave y los avisos,
-// otra con cada artículo (foto, total, estado, dónde está) y otra por zonas,
-// con cada zona en su color del mapa. Listo para imprimir en A4.
+// Excel del stock con la imagen de verdnatura.es: banda negra con el logo,
+// Poppins y el verde lima de la marca. Una hoja de resumen con los números
+// clave y los avisos, otra con cada artículo (foto, total, estado, dónde está)
+// y otra por zonas, con cada zona en su color del mapa. Listo para imprimir en A4.
 
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
+/** Colores de la marca (los de verdnatura.es) y de los avisos. */
 const C = {
-  verde: "FF166534",
-  verdeOscuro: "FF14532D",
-  verdeSuave: "FFBBF7D0",
-  cebra: "FFF6FBF7",
-  borde: "FFE2E8F0",
-  gris: "FF64748B",
-  fondoTarjeta: "FFF8FAFC",
-  texto: "FF0F172A",
-  azul: "FF0369A1",
+  tinta: "FF1A1A1A",
+  lima: "FF8CC63F",
+  limaOscuro: "FF5A8A1F",
+  gris: "FF747A87",
+  grisOscuro: "FF3D3D3D",
+  cebra: "FFF8F8F8",
+  borde: "FFE0DEDE",
+  fondoTarjeta: "FFF8F8F8",
+  texto: "FF1A1A1A",
   rojo: "FFB91C1C",
   ambar: "FFB45309",
   ambarFondo: "FFFEF3C7",
 };
 
 const COLOR_ESTADO: Record<Estado, { texto: string; fondo: string }> = {
-  ok: { texto: "FF15803D", fondo: "FFDCFCE7" },
+  ok: { texto: "FF4D7C0F", fondo: "FFECF7DA" },
   "bajo-minimo": { texto: "FFB91C1C", fondo: "FFFEE2E2" },
-  "sin-stock": { texto: "FF475569", fondo: "FFF1F5F9" },
+  "sin-stock": { texto: "FF3D3D3D", fondo: "FFEEF0F2" },
 };
 
-const FUENTE = "Calibri";
+/** Poppins, la letra de la web; si el ordenador no la tiene, Excel pone una sin remates parecida. */
+const F = { name: "Poppins", family: 2 } as const;
+/** Filas que ocupa la banda negra de arriba, más una de aire: el contenido empieza en la siguiente. */
+const INICIO = 5;
 const relleno = (color: string): ExcelJS.Fill => ({ type: "pattern", pattern: "solid", fgColor: { argb: color } });
 const linea = (color = C.borde, style: ExcelJS.BorderStyle = "thin"): Partial<ExcelJS.Border> => ({ style, color: { argb: color } });
 
-/** Banda verde de título que ocupa las `columnas` primeras columnas (filas 1 y 2). */
-function cabecera(ws: ExcelJS.Worksheet, columnas: number, titulo: string, informe: Informe) {
-  ws.mergeCells(1, 1, 1, columnas);
-  ws.mergeCells(2, 1, 2, columnas);
-  const t = ws.getCell(1, 1);
-  t.value = titulo;
-  t.font = { name: FUENTE, size: 20, bold: true, color: { argb: "FFFFFFFF" } };
-  t.alignment = { vertical: "middle", indent: 1 };
-  const s = ws.getCell(2, 1);
-  s.value = `Verdnatura · Nave Holland  ·  ${fechaLarga(informe.fecha)}${informe.autor ? `  ·  por ${informe.autor}` : ""}`;
-  s.font = { name: FUENTE, size: 10, color: { argb: C.verdeSuave } };
-  s.alignment = { vertical: "top", indent: 1 };
-  for (let c = 1; c <= columnas; c++) {
-    ws.getCell(1, c).fill = relleno(C.verde);
-    ws.getCell(2, c).fill = relleno(C.verde);
+/**
+ * Banda negra de arriba en las `columnas` primeras columnas, como el pie de la
+ * web: el logo (fila 1), el título (fila 2) y de qué y cuándo es (fila 3, en lima).
+ */
+function cabecera(wb: ExcelJS.Workbook, ws: ExcelJS.Worksheet, columnas: number, titulo: string, informe: Informe, logo?: string) {
+  for (let fila = 1; fila <= 3; fila++) {
+    ws.mergeCells(fila, 1, fila, columnas);
+    for (let c = 1; c <= columnas; c++) ws.getCell(fila, c).fill = relleno(C.tinta);
   }
-  ws.getRow(1).height = 36;
-  ws.getRow(2).height = 22;
-  ws.getRow(3).height = 10;
+  const t = ws.getCell(2, 1);
+  t.value = titulo;
+  t.font = { ...F, size: 18, bold: true, color: { argb: "FFFFFFFF" } };
+  t.alignment = { vertical: "middle", indent: 1 };
+  const s = ws.getCell(3, 1);
+  s.value = `Nave Holland  ·  ${fechaLarga(informe.fecha)}${informe.autor ? `  ·  por ${informe.autor}` : ""}`;
+  s.font = { ...F, size: 9, color: { argb: C.lima } };
+  s.alignment = { vertical: "top", indent: 1 };
+  ws.getRow(1).height = 34;
+  ws.getRow(2).height = 28;
+  ws.getRow(3).height = 22;
+  ws.getRow(4).height = 10;
+  if (logo) {
+    const imagen = wb.addImage({ base64: logo.replace(/^data:image\/\w+;base64,/, ""), extension: "png" });
+    const alto = 24;
+    ws.addImage(imagen, { tl: { col: 0.12, row: 0.22 }, ext: { width: Math.round(alto * PROPORCION_LOGO), height: alto }, editAs: "absolute" });
+  } else {
+    const l = ws.getCell(1, 1);
+    l.value = "Verdnatura";
+    l.font = { ...F, size: 14, bold: true, italic: true, color: { argb: C.lima } };
+    l.alignment = { vertical: "bottom", indent: 1 };
+  }
 }
 
 function preparar(ws: ExcelJS.Worksheet, horizontal: boolean) {
@@ -74,10 +92,10 @@ function filaCabecera(ws: ExcelJS.Worksheet, fila: number, textos: string[], cen
   textos.forEach((texto, i) => {
     const celda = r.getCell(i + 1);
     celda.value = texto;
-    celda.font = { name: FUENTE, size: 10, bold: true, color: { argb: "FFFFFFFF" } };
-    celda.fill = relleno(C.verdeOscuro);
+    celda.font = { ...F, size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+    celda.fill = relleno(C.tinta);
     celda.alignment = { vertical: "middle", horizontal: centrada(i) ? "center" : "left", indent: centrada(i) ? 0 : 1, wrapText: true };
-    celda.border = { bottom: linea(C.verdeOscuro) };
+    celda.border = { bottom: linea(C.tinta) };
   });
   r.height = 24;
 }
@@ -86,7 +104,7 @@ function filaCabecera(ws: ExcelJS.Worksheet, fila: number, textos: string[], cen
 function estiloFila(r: ExcelJS.Row, columnas: number, par: boolean, primeraColumna = 1) {
   for (let c = primeraColumna; c < primeraColumna + columnas; c++) {
     const celda = r.getCell(c);
-    celda.font = { name: FUENTE, size: 10, color: { argb: C.texto }, ...celda.font };
+    celda.font = { ...F, size: 10, color: { argb: C.texto }, ...celda.font };
     celda.alignment = { vertical: "middle", wrapText: true, ...celda.alignment };
     celda.border = { bottom: linea() };
     if (par) celda.fill = relleno(C.cebra);
@@ -95,7 +113,7 @@ function estiloFila(r: ExcelJS.Row, columnas: number, par: boolean, primeraColum
 
 function celdaEstado(celda: ExcelJS.Cell, estado: Estado) {
   celda.value = ETIQUETA_ESTADO[estado];
-  celda.font = { name: FUENTE, size: 10, bold: true, color: { argb: COLOR_ESTADO[estado].texto } };
+  celda.font = { ...F, size: 10, bold: true, color: { argb: COLOR_ESTADO[estado].texto } };
   celda.fill = relleno(COLOR_ESTADO[estado].fondo);
   celda.alignment = { vertical: "middle", horizontal: "center" };
 }
@@ -104,48 +122,60 @@ function titulo(ws: ExcelJS.Worksheet, fila: number, texto: string, columnas: nu
   ws.mergeCells(fila, 1, fila, columnas);
   const celda = ws.getCell(fila, 1);
   celda.value = texto;
-  celda.font = { name: FUENTE, size: 13, bold: true, color: { argb: C.verdeOscuro } };
+  celda.font = { ...F, size: 13, bold: true, color: { argb: C.tinta } };
   celda.alignment = { vertical: "bottom" };
-  for (let c = 1; c <= columnas; c++) ws.getCell(fila, c).border = { bottom: linea(C.verde, "medium") };
+  for (let c = 1; c <= columnas; c++) ws.getCell(fila, c).border = { bottom: linea(C.lima, "medium") };
   ws.getRow(fila).height = 26;
 }
 
-function hojaResumen(wb: ExcelJS.Workbook, informe: Informe) {
-  const ws = wb.addWorksheet("Resumen", { properties: { tabColor: { argb: C.verde } }, views: [{ showGridLines: false }] });
+function hojaResumen(wb: ExcelJS.Workbook, informe: Informe, logo?: string) {
+  const ws = wb.addWorksheet("Resumen", { properties: { tabColor: { argb: C.lima } }, views: [{ showGridLines: false }] });
   preparar(ws, false);
   ws.columns = [{ width: 30 }, { width: 17 }, { width: 17 }, { width: 17 }, { width: 17 }];
-  cabecera(ws, 5, "Stock del almacén", informe);
+  cabecera(wb, ws, 5, "Stock del almacén", informe, logo);
 
   const { resumen: r } = informe;
   const tarjetas = [
-    { etiqueta: "ARTÍCULOS", valor: r.articulos, pie: "en el catálogo", color: C.verde },
-    { etiqueta: "CON STOCK", valor: r.conStock, pie: `de ${r.articulos}`, color: C.verde },
-    { etiqueta: "ZONAS OCUPADAS", valor: r.zonasOcupadas, pie: "con algo dentro", color: C.azul },
-    { etiqueta: "BAJO MÍNIMO", valor: r.bajoMinimo, pie: r.bajoMinimo ? "hay que reponer" : "todo en orden", color: r.bajoMinimo ? C.rojo : C.verde },
-    { etiqueta: "SIN UBICAR", valor: r.sinUbicar, pie: r.sinUbicar ? "colocar en el mapa" : "todo colocado", color: r.sinUbicar ? C.ambar : C.verde },
+    { etiqueta: "ARTÍCULOS", valor: r.articulos, pie: "en el catálogo", color: C.tinta, barra: C.lima },
+    { etiqueta: "CON STOCK", valor: r.conStock, pie: `de ${r.articulos}`, color: C.limaOscuro, barra: C.lima },
+    { etiqueta: "ZONAS OCUPADAS", valor: r.zonasOcupadas, pie: "con algo dentro", color: C.grisOscuro, barra: C.gris },
+    {
+      etiqueta: "BAJO MÍNIMO",
+      valor: r.bajoMinimo,
+      pie: r.bajoMinimo ? "hay que reponer" : "todo en orden",
+      color: r.bajoMinimo ? C.rojo : C.limaOscuro,
+      barra: r.bajoMinimo ? C.rojo : C.lima,
+    },
+    {
+      etiqueta: "SIN UBICAR",
+      valor: r.sinUbicar,
+      pie: r.sinUbicar ? "colocar en el mapa" : "todo colocado",
+      color: r.sinUbicar ? C.ambar : C.limaOscuro,
+      barra: r.sinUbicar ? C.ambar : C.lima,
+    },
   ];
   tarjetas.forEach((t, i) => {
     const col = i + 1;
-    const [a, b, c] = [ws.getCell(5, col), ws.getCell(6, col), ws.getCell(7, col)];
+    const [a, b, c] = [ws.getCell(INICIO + 1, col), ws.getCell(INICIO + 2, col), ws.getCell(INICIO + 3, col)];
     a.value = t.etiqueta;
-    a.font = { name: FUENTE, size: 8, bold: true, color: { argb: C.gris } };
+    a.font = { ...F, size: 8, bold: true, color: { argb: C.gris } };
     b.value = t.valor;
-    b.font = { name: FUENTE, size: 24, bold: true, color: { argb: t.color } };
+    b.font = { ...F, size: 24, bold: true, color: { argb: t.color } };
     b.numFmt = "#,##0";
     c.value = t.pie;
-    c.font = { name: FUENTE, size: 9, color: { argb: C.gris } };
+    c.font = { ...F, size: 9, color: { argb: C.gris } };
     for (const celda of [a, b, c]) {
       celda.fill = relleno(C.fondoTarjeta);
       celda.alignment = { vertical: "middle", horizontal: "center" };
       celda.border = { left: linea("FFFFFFFF", "medium"), right: linea("FFFFFFFF", "medium") };
     }
-    a.border = { ...a.border, top: linea(t.color, "thick") };
+    a.border = { ...a.border, top: linea(t.barra, "thick") };
   });
-  ws.getRow(5).height = 22;
-  ws.getRow(6).height = 36;
-  ws.getRow(7).height = 20;
+  ws.getRow(INICIO + 1).height = 22;
+  ws.getRow(INICIO + 2).height = 36;
+  ws.getRow(INICIO + 3).height = 20;
 
-  let fila = 9;
+  let fila = INICIO + 5;
   titulo(ws, fila, "Por categoría", 5);
   fila += 1;
   filaCabecera(ws, fila, ["Categoría", "Artículos", "Con stock", "Bajo mínimo", "Sin ubicar"]);
@@ -153,11 +183,11 @@ function hojaResumen(wb: ExcelJS.Workbook, informe: Informe) {
     const r = ws.getRow(++fila);
     r.values = [c.categoria, c.articulos, c.conStock, c.bajoMinimo, c.sinUbicar];
     estiloFila(r, 5, i % 2 === 1);
-    r.getCell(1).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.texto } };
+    r.getCell(1).font = { ...F, size: 10, bold: true, color: { argb: C.texto } };
     r.getCell(1).alignment = { vertical: "middle", indent: 1 };
     for (let col = 2; col <= 5; col++) r.getCell(col).alignment = { vertical: "middle", horizontal: "center" };
-    if (c.bajoMinimo) r.getCell(4).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.rojo } };
-    if (c.sinUbicar) r.getCell(5).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.ambar } };
+    if (c.bajoMinimo) r.getCell(4).font = { ...F, size: 10, bold: true, color: { argb: C.rojo } };
+    if (c.sinUbicar) r.getCell(5).font = { ...F, size: 10, bold: true, color: { argb: C.ambar } };
     r.height = 20;
   });
   if (!informe.categorias.length) ws.getCell(++fila, 1).value = "No hay artículos en el catálogo.";
@@ -170,7 +200,7 @@ function hojaResumen(wb: ExcelJS.Workbook, informe: Informe) {
     const celda = ws.getCell(++fila, 1);
     ws.mergeCells(fila, 1, fila, 5);
     celda.value = "✓  Todo en orden: ningún artículo está por debajo de su mínimo y todo está colocado en el mapa.";
-    celda.font = { name: FUENTE, size: 10, color: { argb: "FF15803D" } };
+    celda.font = { ...F, size: 10, color: { argb: "FF15803D" } };
     celda.fill = relleno("FFF0FDF4");
     celda.alignment = { vertical: "middle", indent: 1 };
     ws.getRow(fila).height = 24;
@@ -184,7 +214,7 @@ function hojaResumen(wb: ExcelJS.Workbook, informe: Informe) {
       estiloFila(r, 5, i % 2 === 1);
       r.getCell(1).alignment = { vertical: "middle", indent: 1 };
       for (let col = 2; col <= 5; col++) r.getCell(col).alignment = { vertical: "middle", horizontal: "center" };
-      r.getCell(5).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.rojo } };
+      r.getCell(5).font = { ...F, size: 10, bold: true, color: { argb: C.rojo } };
     });
   }
   if (sinUbicar.length) {
@@ -196,13 +226,13 @@ function hojaResumen(wb: ExcelJS.Workbook, informe: Informe) {
       estiloFila(r, 5, i % 2 === 1);
       r.getCell(1).alignment = { vertical: "middle", indent: 1 };
       for (let col = 2; col <= 4; col++) r.getCell(col).alignment = { vertical: "middle", horizontal: "center" };
-      r.getCell(3).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.ambar } };
+      r.getCell(3).font = { ...F, size: 10, bold: true, color: { argb: C.ambar } };
     });
   }
 }
 
-function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string, string>) {
-  const ws = wb.addWorksheet("Por artículo", { properties: { tabColor: { argb: "FF22C55E" } } });
+function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string, string>, logo?: string) {
+  const ws = wb.addWorksheet("Por artículo", { properties: { tabColor: { argb: C.tinta } } });
   preparar(ws, true);
   const conFotos = fotos.size > 0;
   const columnas = [
@@ -220,15 +250,15 @@ function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string
   ws.columns = columnas.map((c) => ({ width: c.ancho }));
   const n = columnas.length;
   const col = (titulo: string) => columnas.findIndex((c) => c.titulo === titulo) + 1;
-  cabecera(ws, n, "Stock por artículo", informe);
+  cabecera(wb, ws, n, "Stock por artículo", informe, logo);
   const CENTRADAS = ["Foto", "Total", "Unidad", "Mínimo", "Estado"];
-  filaCabecera(ws, 4, columnas.map((c) => c.titulo), (i) => CENTRADAS.includes(columnas[i].titulo));
-  ws.views = [{ state: "frozen", ySplit: 4, xSplit: col("Artículo"), showGridLines: false }];
-  ws.autoFilter = { from: { row: 4, column: col("Artículo") }, to: { row: 4, column: n } };
-  ws.pageSetup.printTitlesRow = "4:4";
+  filaCabecera(ws, INICIO, columnas.map((c) => c.titulo), (i) => CENTRADAS.includes(columnas[i].titulo));
+  ws.views = [{ state: "frozen", ySplit: INICIO, xSplit: col("Artículo"), showGridLines: false }];
+  ws.autoFilter = { from: { row: INICIO, column: col("Artículo") }, to: { row: INICIO, column: n } };
+  ws.pageSetup.printTitlesRow = `${INICIO}:${INICIO}`;
 
   informe.articulos.forEach((f, i) => {
-    const filaN = 5 + i;
+    const filaN = INICIO + 1 + i;
     const r = ws.getRow(filaN);
     const a = f.articulo;
     r.getCell(col("Artículo")).value = a.nombre;
@@ -240,11 +270,11 @@ function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string
     const donde: ExcelJS.RichText[] = [];
     f.zonas.forEach((z, j) => {
       if (j) donde.push({ text: "\n" });
-      donde.push({ text: `${z.zona.nombre}  `, font: { name: FUENTE, size: 10 } }, { text: String(z.cantidad), font: { name: FUENTE, size: 10, bold: true } });
+      donde.push({ text: `${z.zona.nombre}  `, font: { ...F, size: 10 } }, { text: String(z.cantidad), font: { ...F, size: 10, bold: true } });
     });
     if (f.sinUbicar) {
       if (donde.length) donde.push({ text: "\n" });
-      donde.push({ text: `Sin ubicar  ${f.sinUbicar}`, font: { name: FUENTE, size: 10, bold: true, color: { argb: C.ambar } } });
+      donde.push({ text: `Sin ubicar  ${f.sinUbicar}`, font: { ...F, size: 10, bold: true, color: { argb: C.ambar } } });
     }
     r.getCell(col("Dónde está")).value = donde.length ? { richText: donde } : "—";
 
@@ -252,19 +282,19 @@ function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string
     a.caracteristicas.forEach((c, j) => {
       if (j) caracteristicas.push({ text: "\n" });
       caracteristicas.push(
-        { text: c.nombre ? `${c.nombre}: ` : "", font: { name: FUENTE, size: 10, color: { argb: C.gris } } },
-        { text: c.valor, font: { name: FUENTE, size: 10 } },
+        { text: c.nombre ? `${c.nombre}: ` : "", font: { ...F, size: 10, color: { argb: C.gris } } },
+        { text: c.valor, font: { ...F, size: 10 } },
       );
     });
     r.getCell(col("Características")).value = caracteristicas.length ? { richText: caracteristicas } : "";
     r.getCell(col("Descripción")).value = a.descripcion;
 
     estiloFila(r, n, i % 2 === 1);
-    r.getCell(col("Artículo")).font = { name: FUENTE, size: 11, bold: true, color: { argb: C.texto } };
+    r.getCell(col("Artículo")).font = { ...F, size: 11, bold: true, color: { argb: C.texto } };
     r.getCell(col("Artículo")).alignment = { vertical: "middle", wrapText: true, indent: 1 };
-    r.getCell(col("Categoría")).font = { name: FUENTE, size: 10, color: { argb: C.gris } };
+    r.getCell(col("Categoría")).font = { ...F, size: 10, color: { argb: C.gris } };
     const totalCelda = r.getCell(col("Total"));
-    totalCelda.font = { name: FUENTE, size: 12, bold: true, color: { argb: C.texto } };
+    totalCelda.font = { ...F, size: 12, bold: true, color: { argb: C.texto } };
     totalCelda.numFmt = "#,##0";
     for (const t of ["Total", "Unidad", "Mínimo"]) r.getCell(col(t)).alignment = { vertical: "middle", horizontal: "center" };
     celdaEstado(r.getCell(col("Estado")), f.estado);
@@ -279,18 +309,18 @@ function hojaArticulos(wb: ExcelJS.Workbook, informe: Informe, fotos: Map<string
     }
   });
 
-  const pie = ws.getCell(5 + informe.articulos.length + 1, col("Artículo"));
+  const pie = ws.getCell(INICIO + 1 + informe.articulos.length + 1, col("Artículo"));
   pie.value = `${informe.articulos.length} artículos`;
-  pie.font = { name: FUENTE, size: 9, italic: true, color: { argb: C.gris } };
+  pie.font = { ...F, size: 9, italic: true, color: { argb: C.gris } };
 }
 
-function hojaZonas(wb: ExcelJS.Workbook, informe: Informe) {
-  const ws = wb.addWorksheet("Por zona", { properties: { tabColor: { argb: C.azul } }, views: [{ showGridLines: false }] });
+function hojaZonas(wb: ExcelJS.Workbook, informe: Informe, logo?: string) {
+  const ws = wb.addWorksheet("Por zona", { properties: { tabColor: { argb: C.gris } }, views: [{ showGridLines: false }] });
   preparar(ws, true);
   ws.columns = [{ width: 36 }, { width: 18 }, { width: 12 }, { width: 13 }, { width: 44 }];
-  cabecera(ws, 5, "Stock por zona", informe);
+  cabecera(wb, ws, 5, "Stock por zona", informe, logo);
 
-  let fila = 4;
+  let fila = INICIO;
   if (!informe.zonas.length) ws.getCell(fila, 1).value = "No hay nada apuntado en ninguna zona.";
   for (const g of informe.zonas) {
     const color = g.zona ? argb(g.zona.color) : C.ambar;
@@ -302,11 +332,11 @@ function hojaZonas(wb: ExcelJS.Workbook, informe: Informe) {
     const categoria = g.zona ? categoriaZona(g.zona) : "";
     cab.value = {
       richText: [
-        { text: "●  ", font: { name: FUENTE, size: 13, color: { argb: color } } },
-        { text: g.zona ? g.zona.nombre : "Sin ubicar", font: { name: FUENTE, size: 12, bold: true, color: { argb: C.texto } } },
+        { text: "●  ", font: { ...F, size: 13, color: { argb: color } } },
+        { text: g.zona ? g.zona.nombre : "Sin ubicar", font: { ...F, size: 12, bold: true, color: { argb: C.texto } } },
         {
           text: g.zona ? `     ${categoria ? `${categoria}  ·  ` : ""}${articulos}` : `     zona borrada del mapa  ·  ${articulos}`,
-          font: { name: FUENTE, size: 10, color: { argb: C.gris } },
+          font: { ...F, size: 10, color: { argb: C.gris } },
         },
       ],
     };
@@ -319,7 +349,7 @@ function hojaZonas(wb: ExcelJS.Workbook, informe: Informe) {
     ["Artículo", "Categoría", "Cantidad", "Unidad", "Nota"].forEach((t, i) => {
       const celda = ws.getCell(fila, i + 1);
       celda.value = t;
-      celda.font = { name: FUENTE, size: 9, bold: true, color: { argb: C.gris } };
+      celda.font = { ...F, size: 9, bold: true, color: { argb: C.gris } };
       celda.alignment = { vertical: "middle", horizontal: i === 2 || i === 3 ? "center" : "left", indent: i === 0 ? 1 : 0 };
       celda.border = { bottom: linea(C.borde) };
     });
@@ -329,10 +359,10 @@ function hojaZonas(wb: ExcelJS.Workbook, informe: Informe) {
       const r = ws.getRow(++fila);
       r.values = [x.articulo.nombre, x.articulo.categoria || SIN_CATEGORIA, x.cantidad, x.articulo.unidad, x.nota];
       estiloFila(r, 5, i % 2 === 1);
-      r.getCell(1).font = { name: FUENTE, size: 10, bold: true, color: { argb: C.texto } };
+      r.getCell(1).font = { ...F, size: 10, bold: true, color: { argb: C.texto } };
       r.getCell(1).alignment = { vertical: "middle", indent: 1, wrapText: true };
-      r.getCell(2).font = { name: FUENTE, size: 10, color: { argb: C.gris } };
-      r.getCell(3).font = { name: FUENTE, size: 11, bold: true, color: { argb: C.texto } };
+      r.getCell(2).font = { ...F, size: 10, color: { argb: C.gris } };
+      r.getCell(3).font = { ...F, size: 11, bold: true, color: { argb: C.texto } };
       r.getCell(3).numFmt = "#,##0";
       r.getCell(3).alignment = { vertical: "middle", horizontal: "center" };
       r.getCell(4).alignment = { vertical: "middle", horizontal: "center" };
@@ -342,14 +372,17 @@ function hojaZonas(wb: ExcelJS.Workbook, informe: Informe) {
   }
 }
 
-/** Genera el Excel. `fotos`: miniaturas por id de artículo (vacío = sin fotos). */
-export async function crearExcel(informe: Informe, fotos: Map<string, string> = new Map()) {
+/**
+ * Genera el Excel. `fotos`: miniaturas por id de artículo (vacío = sin fotos);
+ * `logo`: el logo de la marca en PNG (data URL) para la banda de arriba.
+ */
+export async function crearExcel(informe: Informe, fotos: Map<string, string> = new Map(), logo?: string) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Verdnatura · Stock";
   wb.created = informe.fecha;
   wb.title = "Stock del almacén";
-  hojaResumen(wb, informe);
-  hojaArticulos(wb, informe, fotos);
-  hojaZonas(wb, informe);
+  hojaResumen(wb, informe, logo);
+  hojaArticulos(wb, informe, fotos, logo);
+  hojaZonas(wb, informe, logo);
   return wb.xlsx.writeBuffer();
 }

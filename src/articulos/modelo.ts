@@ -65,9 +65,9 @@ export const estadoStock = (a: Articulo): Estado => {
 };
 
 export const ESTADOS: Record<Estado, { nombre: string; clase: string }> = {
-  ok: { nombre: "Con stock", clase: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  "bajo-minimo": { nombre: "Bajo mínimo", clase: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
-  "sin-stock": { nombre: "Sin stock", clase: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
+  ok: { nombre: "Con stock", clase: "bg-correcto-suave text-correcto-texto" },
+  "bajo-minimo": { nombre: "Bajo mínimo", clase: "bg-peligro-suave text-peligro-texto" },
+  "sin-stock": { nombre: "Sin stock", clase: "bg-muted text-muted-foreground" },
 };
 
 export const urlFoto = (ruta: string) => supabase.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl;

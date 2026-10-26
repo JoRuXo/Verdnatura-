@@ -1,10 +1,12 @@
 import { jsPDF } from "jspdf";
 import { autoTable, type CellHookData, type RowInput } from "jspdf-autotable";
 import { ETIQUETA_ESTADO, SIN_CATEGORIA, categoriaZona, fechaLarga, tinte, type Informe } from "./informe";
+import { PROPORCION_LOGO, type RecursosMarca } from "./marca";
 import type { Estado } from "@/articulos/modelo";
 
-// PDF del stock: el mismo contenido que el Excel (resumen, por artículo con
-// foto y por zona con su color), en A4 apaisado.
+// PDF del stock con la imagen de verdnatura.es (banda negra con el logo,
+// Poppins y el verde lima): el mismo contenido que el Excel (resumen, por
+// artículo con foto y por zona con su color), en A4 apaisado.
 
 type RGB = [number, number, number];
 const rgb = (hex: string): RGB => {
@@ -12,21 +14,22 @@ const rgb = (hex: string): RGB => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 };
 
-const VERDE = rgb("#166534");
-const VERDE_OSCURO = rgb("#14532d");
-const VERDE_SUAVE = rgb("#bbf7d0");
-const CEBRA = rgb("#f6fbf7");
-const TEXTO = rgb("#0f172a");
-const GRIS = rgb("#64748b");
-const BORDE = rgb("#e2e8f0");
+// Colores de la marca (los de verdnatura.es) y de los avisos
+const TINTA = rgb("#1a1a1a");
+const LIMA = rgb("#8cc63f");
+const LIMA_OSCURO = rgb("#5a8a1f");
+const CEBRA = rgb("#f8f8f8");
+const TEXTO = rgb("#1a1a1a");
+const GRIS = rgb("#747a87");
+const GRIS_OSCURO = rgb("#3d3d3d");
+const BORDE = rgb("#e0dede");
 const ROJO = rgb("#b91c1c");
 const AMBAR = rgb("#b45309");
-const AZUL = rgb("#0369a1");
 
 const COLOR_ESTADO: Record<Estado, { texto: RGB; fondo: RGB }> = {
-  ok: { texto: rgb("#15803d"), fondo: rgb("#dcfce7") },
+  ok: { texto: rgb("#4d7c0f"), fondo: rgb("#ecf7da") },
   "bajo-minimo": { texto: rgb("#b91c1c"), fondo: rgb("#fee2e2") },
-  "sin-stock": { texto: rgb("#475569"), fondo: rgb("#f1f5f9") },
+  "sin-stock": { texto: rgb("#3d3d3d"), fondo: rgb("#eef0f2") },
 };
 
 /** Caracteres de fuera del juego latino que sí tienen un equivalente claro. */
@@ -52,29 +55,45 @@ const limpio = (s: string) =>
   }).join("");
 
 const MARGEN = 12;
+/** Alto de la banda negra de arriba (mm) y dónde empieza el contenido. */
+const BANDA = 24;
+const INICIO = BANDA + 6;
+
+/** Letra y logo del documento que se está generando (Poppins si se ha podido cargar). */
+const marca: { familia: string; logo?: string } = { familia: "helvetica" };
 
 function cabecera(doc: jsPDF, informe: Informe, titulo: string) {
   const ancho = doc.internal.pageSize.getWidth();
-  doc.setFillColor(...VERDE);
-  doc.rect(0, 0, ancho, 22, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
+  doc.setFillColor(...TINTA);
+  doc.rect(0, 0, ancho, BANDA, "F");
+  if (marca.logo) {
+    const alto = 6;
+    doc.addImage(marca.logo, "PNG", MARGEN, 5, alto * PROPORCION_LOGO, alto);
+  } else {
+    doc.setFont(marca.familia, "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...LIMA);
+    doc.text("Verdnatura", MARGEN, 10);
+  }
+  doc.setFont(marca.familia, "bold");
+  doc.setFontSize(15);
   doc.setTextColor(255, 255, 255);
-  doc.text(titulo, MARGEN, 11.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(...VERDE_SUAVE);
-  doc.text("Verdnatura · Nave Holland", MARGEN, 17.5);
-  doc.text(limpio(`${fechaLarga(informe.fecha)}${informe.autor ? ` · por ${informe.autor}` : ""}`), ancho - MARGEN, 17.5, { align: "right" });
+  doc.text(titulo, MARGEN, 19);
+  doc.setFont(marca.familia, "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...LIMA);
+  doc.text(limpio(`Nave Holland · ${fechaLarga(informe.fecha)}${informe.autor ? ` · por ${informe.autor}` : ""}`), ancho - MARGEN, 19, {
+    align: "right",
+  });
 }
 
 function tituloSeccion(doc: jsPDF, texto: string, y: number) {
   const ancho = doc.internal.pageSize.getWidth();
-  doc.setFont("helvetica", "bold");
+  doc.setFont(marca.familia, "bold");
   doc.setFontSize(12);
-  doc.setTextColor(...VERDE_OSCURO);
+  doc.setTextColor(...TINTA);
   doc.text(texto, MARGEN, y);
-  doc.setDrawColor(...VERDE);
+  doc.setDrawColor(...LIMA);
   doc.setLineWidth(0.5);
   doc.line(MARGEN, y + 1.8, ancho - MARGEN, y + 1.8);
 }
@@ -82,31 +101,43 @@ function tituloSeccion(doc: jsPDF, texto: string, y: number) {
 function tarjetas(doc: jsPDF, informe: Informe, y: number) {
   const { resumen: r } = informe;
   const lista = [
-    { etiqueta: "ARTÍCULOS", valor: r.articulos, pie: "en el catálogo", color: VERDE },
-    { etiqueta: "CON STOCK", valor: r.conStock, pie: `de ${r.articulos}`, color: VERDE },
-    { etiqueta: "ZONAS OCUPADAS", valor: r.zonasOcupadas, pie: "con algo dentro", color: AZUL },
-    { etiqueta: "BAJO MÍNIMO", valor: r.bajoMinimo, pie: r.bajoMinimo ? "hay que reponer" : "todo en orden", color: r.bajoMinimo ? ROJO : VERDE },
-    { etiqueta: "SIN UBICAR", valor: r.sinUbicar, pie: r.sinUbicar ? "colocar en el mapa" : "todo colocado", color: r.sinUbicar ? AMBAR : VERDE },
+    { etiqueta: "ARTÍCULOS", valor: r.articulos, pie: "en el catálogo", color: TINTA, barra: LIMA },
+    { etiqueta: "CON STOCK", valor: r.conStock, pie: `de ${r.articulos}`, color: LIMA_OSCURO, barra: LIMA },
+    { etiqueta: "ZONAS OCUPADAS", valor: r.zonasOcupadas, pie: "con algo dentro", color: GRIS_OSCURO, barra: GRIS },
+    {
+      etiqueta: "BAJO MÍNIMO",
+      valor: r.bajoMinimo,
+      pie: r.bajoMinimo ? "hay que reponer" : "todo en orden",
+      color: r.bajoMinimo ? ROJO : LIMA_OSCURO,
+      barra: r.bajoMinimo ? ROJO : LIMA,
+    },
+    {
+      etiqueta: "SIN UBICAR",
+      valor: r.sinUbicar,
+      pie: r.sinUbicar ? "colocar en el mapa" : "todo colocado",
+      color: r.sinUbicar ? AMBAR : LIMA_OSCURO,
+      barra: r.sinUbicar ? AMBAR : LIMA,
+    },
   ];
   const ancho = doc.internal.pageSize.getWidth();
   const hueco = 4;
   const w = (ancho - 2 * MARGEN - hueco * (lista.length - 1)) / lista.length;
   lista.forEach((t, i) => {
     const x = MARGEN + i * (w + hueco);
-    doc.setFillColor(248, 250, 252);
+    doc.setFillColor(...CEBRA);
     doc.setDrawColor(...BORDE);
     doc.setLineWidth(0.2);
     doc.roundedRect(x, y, w, 22, 1.5, 1.5, "FD");
-    doc.setFillColor(...t.color);
+    doc.setFillColor(...t.barra);
     doc.rect(x, y, w, 1.2, "F");
-    doc.setFont("helvetica", "bold");
+    doc.setFont(marca.familia, "bold");
     doc.setFontSize(7);
     doc.setTextColor(...GRIS);
     doc.text(t.etiqueta, x + w / 2, y + 6, { align: "center" });
     doc.setFontSize(17);
     doc.setTextColor(...t.color);
     doc.text(String(t.valor), x + w / 2, y + 14, { align: "center" });
-    doc.setFont("helvetica", "normal");
+    doc.setFont(marca.familia, "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...GRIS);
     doc.text(t.pie, x + w / 2, y + 19, { align: "center" });
@@ -114,28 +145,47 @@ function tarjetas(doc: jsPDF, informe: Informe, y: number) {
   return y + 22;
 }
 
-const estilosTabla = {
+const estilosTabla = () => ({
   theme: "plain" as const,
-  margin: { left: MARGEN, right: MARGEN, top: 28, bottom: 14 },
-  styles: { font: "helvetica", fontSize: 8.5, textColor: TEXTO, cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 }, valign: "middle" as const, lineColor: BORDE },
-  headStyles: { fillColor: VERDE_OSCURO, textColor: [255, 255, 255] as RGB, fontStyle: "bold" as const, fontSize: 8.5 },
+  margin: { left: MARGEN, right: MARGEN, top: INICIO, bottom: 14 },
+  styles: {
+    font: marca.familia,
+    fontSize: 8.5,
+    textColor: TEXTO,
+    cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 },
+    valign: "middle" as const,
+    lineColor: BORDE,
+  },
+  headStyles: { fillColor: TINTA, textColor: [255, 255, 255] as RGB, fontStyle: "bold" as const, fontSize: 8.5 },
   alternateRowStyles: { fillColor: CEBRA },
   bodyStyles: { lineWidth: { bottom: 0.15 } },
-};
+});
 
-/** Genera el PDF. `fotos`: miniaturas por id de artículo (vacío = sin fotos). */
-export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map()) {
+/**
+ * Genera el PDF. `fotos`: miniaturas por id de artículo (vacío = sin fotos);
+ * `recursos`: logo y letra Poppins de la marca (sin ellos sale con Helvetica).
+ */
+export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map(), recursos: RecursosMarca = {}) {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   doc.setProperties({ title: "Stock del almacén", creator: "Verdnatura · Stock" });
+  marca.logo = recursos.logo;
+  marca.familia = "helvetica";
+  if (recursos.fuentes) {
+    doc.addFileToVFS("Poppins-Regular.ttf", recursos.fuentes.normal);
+    doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
+    doc.addFileToVFS("Poppins-Bold.ttf", recursos.fuentes.negrita);
+    doc.addFont("Poppins-Bold.ttf", "Poppins", "bold");
+    marca.familia = "Poppins";
+  }
   const conFotos = fotos.size > 0;
 
   // Página 1: resumen y por artículo
   cabecera(doc, informe, "Stock del almacén");
-  let y = tarjetas(doc, informe, 28) + 10;
+  let y = tarjetas(doc, informe, INICIO) + 10;
 
   const bajos = informe.articulos.filter((f) => f.estado === "bajo-minimo");
   if (bajos.length) {
-    doc.setFont("helvetica", "bold");
+    doc.setFont(marca.familia, "bold");
     doc.setFontSize(9);
     doc.setTextColor(...ROJO);
     const texto = limpio(`Por debajo del mínimo: ${bajos.map((f) => `${f.articulo.nombre} (${f.total} de ${f.articulo.stockMinimo})`).join(", ")}`);
@@ -163,7 +213,7 @@ export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map(
   ]);
 
   autoTable(doc, {
-    ...estilosTabla,
+    ...estilosTabla(),
     startY: y + 5,
     head: [cabeceraArticulos],
     body: cuerpo.length ? cuerpo : [[{ content: "No hay artículos en el catálogo.", colSpan: cabeceraArticulos.length }]],
@@ -171,10 +221,10 @@ export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map(
       ...(conFotos ? { 0: { cellWidth: 16, minCellHeight: 15 } } : {}),
       [colFoto + 1]: { fontStyle: "bold", fontSize: 9.5, cellWidth: 62 },
       [colFoto + 2]: { textColor: GRIS, cellWidth: 34 },
-      [colTotal]: { halign: "center", fontStyle: "bold", fontSize: 10.5, cellWidth: 16 },
-      [colFoto + 4]: { halign: "center", cellWidth: 20 },
-      [colFoto + 5]: { halign: "center", cellWidth: 16 },
-      [colEstado]: { halign: "center", fontStyle: "bold", cellWidth: 24 },
+      [colTotal]: { halign: "center", fontStyle: "bold", fontSize: 10.5, cellWidth: 17 },
+      [colFoto + 4]: { halign: "center", cellWidth: 22 },
+      [colFoto + 5]: { halign: "center", cellWidth: 20 },
+      [colEstado]: { halign: "center", fontStyle: "bold", cellWidth: 30 },
     },
     didParseCell: (d: CellHookData) => {
       if (d.section !== "body" || !informe.articulos.length) return;
@@ -217,8 +267,8 @@ export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map(
     }
   }
   autoTable(doc, {
-    ...estilosTabla,
-    startY: 30,
+    ...estilosTabla(),
+    startY: INICIO + 2,
     head: [["Artículo", "Categoría", "Cantidad", "Unidad", "Nota"]],
     body: filasZona.length ? filasZona : [[{ content: "No hay nada apuntado en ninguna zona.", colSpan: 5 }]],
     alternateRowStyles: {},
@@ -244,7 +294,7 @@ export function crearPdf(informe: Informe, fotos: Map<string, string> = new Map(
   for (let p = 1; p <= total; p++) {
     doc.setPage(p);
     const { width, height } = doc.internal.pageSize;
-    doc.setFont("helvetica", "normal");
+    doc.setFont(marca.familia, "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(...GRIS);
     doc.text("Verdnatura · Stock del almacén", MARGEN, height - 6);

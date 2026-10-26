@@ -53,7 +53,7 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
             size="icon"
             aria-label="Menú"
             title="Menú"
-            className={cn("h-10 w-10 bg-card/90 shadow-md backdrop-blur", className)}
+            className={cn("h-10 w-10", className)}
           >
             <Menu className="h-4 w-4" />
           </Button>
@@ -107,7 +107,7 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
             <span
               className={cn(
                 "h-2 w-2 rounded-full",
-                conexion === "conectado" ? "bg-emerald-500" : conexion === "conectando" ? "bg-slate-400" : "bg-amber-500",
+                conexion === "conectado" ? "bg-correcto" : conexion === "conectando" ? "bg-muted-foreground" : "bg-aviso",
               )}
             />
             {conexion === "conectado"

@@ -216,7 +216,7 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
 
         <div ref={contenido} className="flex-1 space-y-6 overflow-y-auto px-5 py-4">
           {conflicto && (
-            <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <div role="alert" className="rounded-lg border border-aviso-borde bg-aviso-suave p-3 text-sm text-aviso-texto">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div className="space-y-1">
@@ -271,7 +271,7 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
                         title="Poner como principal"
                         aria-label="Poner como principal"
                         onClick={() => cambiar({ fotos: [f, ...a.fotos.filter((x) => x !== f)] })}
-                        className="rounded bg-white/90 p-0.5 text-amber-500"
+                        className="rounded bg-white/90 p-0.5 text-aviso"
                       >
                         <Star className="h-3.5 w-3.5" />
                       </button>
@@ -385,7 +385,7 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
               </p>
             )}
             {a.existencias.some((e) => !e.elementoId) && (
-              <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              <p className="rounded-lg bg-aviso-suave p-2.5 text-xs text-aviso-texto">
                 Hay cantidades «Sin ubicar» (su zona se borró del mapa). Elige en qué zona están ahora.
               </p>
             )}

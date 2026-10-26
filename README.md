@@ -24,7 +24,7 @@ Three.js con React Three Fiber, drei y camera-controls.
 
 | Archivo | Qué contiene |
 | --- | --- |
-| `plano.ts` | Medidas de la nave sacadas del PDF del plano: paredes, pilares, muelles, oficina, sala azul, contornos y la cuadrícula de referencia (vanos A–K, franjas 1–4). |
+| `plano.ts` | Medidas de la nave sacadas del PDF del plano: límite con las otras empresas, paredes, pilares, muelles M3–M8, oficinas, cámara frigorífica y la cuadrícula de referencia (vanos A–K, franjas 1–4). Solo se dibuja la parte de Verdnatura. |
 | `zonas.ts` | Las zonas del almacén (de momento solo la de ejemplo). |
 | `EscenaNave.tsx` | El lienzo 3D, las luces y la cámara con sus vuelos entre vista general y zona. |
 | `Estructura.tsx` | Dibuja la nave: suelo, paredes cortadas, pilares, muelles, oficina, rótulos. |

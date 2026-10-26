@@ -9,8 +9,7 @@ export type Paleta = {
   corte: string;
   pilar: string;
   oficina: string;
-  mueble: string;
-  cristal: string;
+  camara: string;
   abrigo: string;
   nivelador: string;
   marcaPatio: string;
@@ -25,8 +24,7 @@ export const PALETA_CLARA: Paleta = {
   corte: "#3f4a56",
   pilar: "#8794a2",
   oficina: "#efe9df",
-  mueble: "#d9c7a7",
-  cristal: "#22b8cf",
+  camara: "#22b8cf",
   abrigo: "#3b4450",
   nivelador: "#56606b",
   marcaPatio: "#ffffff",
@@ -41,8 +39,7 @@ export const PALETA_OSCURA: Paleta = {
   corte: "#d3dde8",
   pilar: "#728199",
   oficina: "#475467",
-  mueble: "#7a6a4f",
-  cristal: "#22d3ee",
+  camara: "#22d3ee",
   abrigo: "#2e3744",
   nivelador: "#556070",
   marcaPatio: "#64748b",

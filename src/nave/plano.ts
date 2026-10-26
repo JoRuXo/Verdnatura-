@@ -41,9 +41,45 @@ export const FRANJAS = [
   { numero: 4, y0: 0, y1: 9.85 },
 ];
 
-/** Muelles de carga en la pared derecha, de arriba (M1) a abajo (M8): centro en y. */
-export const MUELLES = [33.44, 29.5, 25.55, 21.61, 13.71, 9.76, 5.8, 1.86].map((y, i) => ({
-  nombre: `M${i + 1}`,
+/**
+ * Límite con las otras empresas de la nave (línea roja discontinua), de la pared
+ * izquierda a la pared de los muelles. Lo que queda por encima no es de Verdnatura.
+ */
+export const LIMITE: Punto[] = [
+  [0, 9.78],
+  [56.11, 9.78],
+  [56.11, 32.42],
+  [89.18, 32.42],
+  [89.18, 27.53],
+  [NAVE.ancho, 27.53],
+];
+
+/** Superficie de Verdnatura dentro de la nave: de la pared de abajo hasta el límite. */
+export const AREA_PROPIA: Punto[] = [[0, 0], [NAVE.ancho, 0], ...[...LIMITE].reverse()];
+
+/** Hasta dónde llega la superficie propia (y) a la altura x. */
+export const alturaPropia = (x: number) => {
+  for (let i = 1; i < LIMITE.length; i++) {
+    const [xa, ya] = LIMITE[i - 1];
+    const [xb, yb] = LIMITE[i];
+    if (ya === yb && x >= xa && x <= xb) return ya;
+  }
+  return 0;
+};
+
+/** Desde dónde empieza la superficie propia (x) a una altura y. */
+export const inicioPropio = (y: number) => (y > LIMITE[0][1] ? LIMITE[1][0] : 0);
+
+/** Hasta dónde llega la superficie propia (x) a una altura y. */
+export const finPropio = (y: number) => (y > LIMITE[LIMITE.length - 1][1] ? LIMITE[3][0] : NAVE.ancho);
+
+/**
+ * Muelles de carga de Verdnatura en la pared derecha, de arriba abajo: centro en y.
+ * M1 y M2 son de la empresa de al lado y no se dibujan; se mantiene la numeración
+ * del plano anotado.
+ */
+export const MUELLES = [25.55, 21.61, 13.71, 9.76, 5.8, 1.86].map((y, i) => ({
+  nombre: `M${i + 3}`,
   y,
 }));
 export const ANCHO_PUERTA_MUELLE = 3;
@@ -53,11 +89,13 @@ export const NIVELADOR = { x0: 107.97, largo: 2.02, ancho: 1.8 };
 /** Puerta P, al lado del bloque de oficina. */
 export const PUERTA_P = { y: 17.68, ancho: 3.5 };
 
+/** Bloque de oficina con la escalera a la planta de arriba. */
 export const OFICINA: Rect = { x0: 99.58, y0: 15.74, x1: 109.74, y1: 19.61 };
-export const MUEBLE: Rect = { x0: 94.16, y0: 16.27, x1: 98.33, y1: 19.86 };
+/** Oficina pequeña montada al lado del bloque. */
+export const OFICINA_PEQUENA: Rect = { x0: 94.16, y0: 16.27, x1: 98.33, y1: 19.86 };
 
-/** Sala cerrada dibujada en azul, con puerta corredera en su lado derecho. */
-export const SALA_AZUL: Rect & { puerta: { y0: number; y1: number } } = {
+/** Cámara frigorífica, con puerta corredera en su lado derecho. */
+export const CAMARA_FRIGORIFICA: Rect & { puerta: { y0: number; y1: number } } = {
   x0: 56.11,
   y0: 19.78,
   x1: 78.97,
@@ -69,27 +107,4 @@ export const SALA_AZUL: Rect & { puerta: { y0: number; y1: number } } = {
 export const PUERTAS_IZQUIERDA = [
   { nombre: "Puerta 1", y0: 8.73, y1: 10.0 },
   { nombre: "Puerta 2", y0: 0.69, y1: 4.18 },
-];
-
-/** Contornos dibujados en el plano cuyo significado está por confirmar. */
-export const CONTORNOS: { nombre: string; color: string; puntos: Punto[] }[] = [
-  {
-    nombre: "Contorno naranja",
-    color: "#f59e0b",
-    puntos: [
-      [56.11, NAVE.fondo],
-      [56.11, 9.78],
-      [0, 9.78],
-    ],
-  },
-  {
-    nombre: "Contorno salmón",
-    color: "#fb7185",
-    puntos: [
-      [56.21, 32.37],
-      [89.18, 32.37],
-      [89.18, 27.53],
-      [NAVE.ancho, 27.53],
-    ],
-  },
 ];

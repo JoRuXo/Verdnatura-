@@ -1,0 +1,95 @@
+// Geometría de la nave sacada de los vectores del PDF "NAVE HOLLAND vacía".
+// El plano no trae cotas: la escala es provisional (1:300, 1 pt = 0,1058 m),
+// deducida de los muelles (uno cada ~4 m). Cuando haya una medida real,
+// basta con reescalar estos números.
+//
+// Coordenadas del plano en metros:
+//   x → de la pared izquierda (0) a la pared de los muelles (110)
+//   y → de la pared de abajo (0) al borde superior del plano (33,7)
+
+export type Punto = [number, number];
+export type Rect = { x0: number; y0: number; x1: number; y1: number };
+
+export const NAVE = { ancho: 110, fondo: 33.71 };
+
+/** Altura a la que se "corta" la maqueta para poder ver el interior desde arriba. */
+export const ALTURA_CORTE = 3.2;
+export const GROSOR_PARED = 0.35;
+
+/** Pasa un punto del plano (x, y) a la escena 3D (x, z), centrada en la nave. */
+export const aEscena = (x: number, y: number): Punto => [x - NAVE.ancho / 2, NAVE.fondo / 2 - y];
+
+/** Fila central de pilares (línea de vanos A–K). */
+export const FILA_PILARES_Y = 19.63;
+export const PILARES_X = [6.71, 17.02, 27.33, 37.62, 47.93, 58.24, 68.54, 78.85, 89.15, 99.6];
+
+/** Pilastras embebidas en la pared de abajo. */
+export const PILASTRAS_FACHADA_X = [
+  3.33, 6.68, 11.83, 16.98, 22.13, 27.28, 32.44, 37.59, 42.75, 47.89, 53.04, 58.2, 63.35, 68.51,
+  73.66, 78.81, 83.96, 89.11, 94.27, 99.42, 104.57,
+];
+
+/** Referencias del plano anotado: letras = vanos entre pilares, números = franjas. */
+export const VANOS = "ABCDEFGHIJK".split("").map((letra, i) => {
+  const cortes = [0, ...PILARES_X, NAVE.ancho];
+  return { letra, x0: cortes[i], x1: cortes[i + 1] };
+});
+export const FRANJAS = [
+  { numero: 1, y0: 26.74, y1: NAVE.fondo },
+  { numero: 2, y0: FILA_PILARES_Y, y1: 26.74 },
+  { numero: 3, y0: 9.85, y1: FILA_PILARES_Y },
+  { numero: 4, y0: 0, y1: 9.85 },
+];
+
+/** Muelles de carga en la pared derecha, de arriba (M1) a abajo (M8): centro en y. */
+export const MUELLES = [33.44, 29.5, 25.55, 21.61, 13.71, 9.76, 5.8, 1.86].map((y, i) => ({
+  nombre: `M${i + 1}`,
+  y,
+}));
+export const ANCHO_PUERTA_MUELLE = 3;
+/** Plataforma niveladora dentro de la nave, delante de cada muelle. */
+export const NIVELADOR = { x0: 107.97, largo: 2.02, ancho: 1.8 };
+
+/** Puerta P, al lado del bloque de oficina. */
+export const PUERTA_P = { y: 17.68, ancho: 3.5 };
+
+export const OFICINA: Rect = { x0: 99.58, y0: 15.74, x1: 109.74, y1: 19.61 };
+export const MUEBLE: Rect = { x0: 94.16, y0: 16.27, x1: 98.33, y1: 19.86 };
+
+/** Sala cerrada dibujada en azul, con puerta corredera en su lado derecho. */
+export const SALA_AZUL: Rect & { puerta: { y0: number; y1: number } } = {
+  x0: 56.11,
+  y0: 19.78,
+  x1: 78.97,
+  y1: 32.42,
+  puerta: { y0: 21.11, y1: 23.73 },
+};
+
+/** Puertas en la pared izquierda (tramo en y). */
+export const PUERTAS_IZQUIERDA = [
+  { nombre: "Puerta 1", y0: 8.73, y1: 10.0 },
+  { nombre: "Puerta 2", y0: 0.69, y1: 4.18 },
+];
+
+/** Contornos dibujados en el plano cuyo significado está por confirmar. */
+export const CONTORNOS: { nombre: string; color: string; puntos: Punto[] }[] = [
+  {
+    nombre: "Contorno naranja",
+    color: "#f59e0b",
+    puntos: [
+      [56.11, NAVE.fondo],
+      [56.11, 9.78],
+      [0, 9.78],
+    ],
+  },
+  {
+    nombre: "Contorno salmón",
+    color: "#fb7185",
+    puntos: [
+      [56.21, 32.37],
+      [89.18, 32.37],
+      [89.18, 27.53],
+      [NAVE.ancho, 27.53],
+    ],
+  },
+];

@@ -1,7 +1,8 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, ImagePlus, Loader2, MapPin, Plus, Star, Trash2, X } from "lucide-react";
+import { AlertTriangle, Camera, ImagePlus, Loader2, MapPin, MapPinned, Plus, Star, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,21 +21,44 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { Elemento } from "@/nave/elementos";
-import { CARACTERISTICAS_SUGERIDAS, UNIDADES, total, urlFoto, type Articulo } from "./modelo";
-import { CLAVE_ARTICULOS, borrarArticulo, borrarFotos, guardarArticulo, subirFoto } from "./useArticulos";
+import { ListaHistorial } from "@/historial/ListaHistorial";
+import { useHistorial } from "@/historial/useHistorial";
+import { CARACTERISTICAS_SUGERIDAS, ESTADOS, UNIDADES, estadoStock, nuevaExistencia, total, urlFoto, type Articulo } from "./modelo";
+import {
+  CLAVE_ARTICULOS,
+  ConflictoError,
+  borrarArticulo,
+  borrarFotos,
+  guardarArticulo,
+  leerArticulo,
+  subirFoto,
+} from "./useArticulos";
 
 const SIN_UBICAR = "__sin__";
 
 type Props = {
-  /** Artículo a editar, o uno vacío si es nuevo. */
+  /** Artículo a editar tal como está guardado, o uno vacío si es nuevo. */
   inicial: Articulo;
   esNuevo: boolean;
+  /** Abre la ficha con una fila nueva para esta zona («poner aquí uno que ya existe»). */
+  anadirEn?: string | null;
   /** Elementos del mapa, para elegir dónde está. */
   elementos: Elemento[];
   /** Categorías que ya existen, para sugerirlas. */
   categorias: string[];
   onCerrar: () => void;
+  /** Lleva al mapa con las zonas donde está el artículo señaladas. */
+  onVerEnMapa?: (a: Articulo) => void;
 };
+
+/** Últimos cambios del artículo, con enlace al historial completo. */
+function UltimosCambios({ articuloId }: { articuloId: string }) {
+  const historial = useHistorial({ articuloId }, 6);
+  const cambios = historial.data?.pages.flat() ?? [];
+  if (historial.isLoading) return <p className="text-sm text-muted-foreground">Cargando…</p>;
+  if (!cambios.length) return <p className="text-sm text-muted-foreground">Aún no hay cambios apuntados.</p>;
+  return <ListaHistorial cambios={cambios} compacta />;
+}
 
 function Seccion({ titulo, children, accion }: { titulo: string; children: ReactNode; accion?: ReactNode }) {
   return (
@@ -49,20 +73,24 @@ function Seccion({ titulo, children, accion }: { titulo: string; children: React
 }
 
 /** Ficha de un artículo: fotos, datos, dónde está y cuántos hay, y características. */
-export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerrar }: Props) {
+export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categorias, onCerrar, onVerEnMapa }: Props) {
   const queryClient = useQueryClient();
-  const [a, setA] = useState<Articulo>(inicial);
+  // Cómo estaba guardado al abrir: al guardar solo se manda lo que ha cambiado desde aquí
+  const [base, setBase] = useState<Articulo>(inicial);
+  const [a, setA] = useState<Articulo>(() =>
+    anadirEn ? { ...inicial, existencias: [...inicial.existencias, nuevaExistencia(anadirEn)] } : inicial,
+  );
+  const [conflicto, setConflicto] = useState<string[] | null>(null);
   const [subiendo, setSubiendo] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
   // Fotos subidas en esta edición: si se cancela, se borran para no dejar basura
   const subidas = useRef<string[]>([]);
   const archivos = useRef<HTMLInputElement>(null);
+  const contenido = useRef<HTMLDivElement>(null);
   const idCategorias = useId();
   const idUnidades = useId();
   const idCaracteristicas = useId();
-
-  useEffect(() => setA(inicial), [inicial]);
 
   const cambiar = (cambios: Partial<Articulo>) => setA((x) => ({ ...x, ...cambios }));
 
@@ -73,6 +101,24 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
   const nombreZona = (id: string | null) => {
     const z = id && elementos.find((e) => e.id === id);
     return z ? z.nombre : "Sin ubicar";
+  };
+
+  /** Tras un conflicto: se descarta lo editado y se carga lo que hay ahora guardado. */
+  const cargarLoUltimo = async () => {
+    try {
+      const fresco = await leerArticulo(a.id);
+      void queryClient.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
+      if (!fresco) {
+        toast.error("Este artículo lo ha borrado otra persona");
+        onCerrar();
+        return;
+      }
+      setBase(fresco);
+      setA(fresco);
+      setConflicto(null);
+    } catch (err) {
+      toast.error("No se ha podido cargar", { description: (err as Error).message });
+    }
   };
 
   const anadirFotos = async (lista: FileList | null) => {
@@ -106,13 +152,18 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
     }
     setGuardando(true);
     try {
-      await guardarArticulo(a, esNuevo ? null : inicial);
+      await guardarArticulo(a, esNuevo ? null : base, nombreZona);
       subidas.current = [];
       await queryClient.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
       toast.success(esNuevo ? "Artículo creado" : "Artículo guardado");
       onCerrar();
     } catch (err) {
-      toast.error("No se ha podido guardar", { description: (err as Error).message });
+      if (err instanceof ConflictoError) {
+        setConflicto(err.detalles);
+        // El aviso está arriba de la ficha y se suele guardar desde abajo
+        contenido.current?.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      else toast.error("No se ha podido guardar", { description: (err as Error).message });
     } finally {
       setGuardando(false);
     }
@@ -120,7 +171,7 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
 
   const borrar = async () => {
     try {
-      await borrarArticulo(inicial);
+      await borrarArticulo(base);
       await queryClient.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
       toast.success("Artículo borrado");
       onCerrar();
@@ -131,18 +182,54 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
 
   const zonasUsadas = new Set(a.existencias.map((e) => e.elementoId));
   const principal = a.fotos[0];
+  const estado = estadoStock(a);
+  const ubicado = base.existencias.some((e) => e.elementoId);
 
   return (
     <Sheet open onOpenChange={(abierto) => !abierto && cancelar()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
         <SheetHeader className="border-b px-5 py-4 text-left">
           <SheetTitle>{esNuevo ? "Nuevo artículo" : a.nombre || "Artículo"}</SheetTitle>
-          <SheetDescription>
-            {esNuevo ? "Rellena lo que sepas; lo demás lo puedes completar después." : `${total(a)} ${a.unidad} en total`}
+          <SheetDescription className="flex flex-wrap items-center gap-2">
+            {esNuevo ? (
+              "Rellena lo que sepas; lo demás lo puedes completar después."
+            ) : (
+              <>
+                <span>
+                  {total(a)} {a.unidad} en total
+                </span>
+                {estado !== "ok" && (
+                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", ESTADOS[estado].clase)}>{ESTADOS[estado].nombre}</span>
+                )}
+              </>
+            )}
           </SheetDescription>
+          {!esNuevo && ubicado && onVerEnMapa && (
+            <Button variant="outline" size="sm" className="mt-2 w-fit gap-1.5" onClick={() => onVerEnMapa(base)}>
+              <MapPinned className="h-4 w-4" /> Ver en el mapa
+            </Button>
+          )}
         </SheetHeader>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-4">
+        <div ref={contenido} className="flex-1 space-y-6 overflow-y-auto px-5 py-4">
+          {conflicto && (
+            <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Otra persona ha cambiado esto mientras lo editabas. No se ha guardado nada.</p>
+                  <ul className="list-disc pl-4">
+                    {conflicto.map((c) => (
+                      <li key={c}>{c}</li>
+                    ))}
+                  </ul>
+                  <Button size="sm" variant="outline" className="mt-1 bg-background" onClick={cargarLoUltimo}>
+                    Cargar lo último y volver a empezar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* Fotos */}
           <Seccion titulo="Fotos">
             <input
@@ -247,6 +334,24 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
                 <Label className="text-xs text-muted-foreground">Descripción</Label>
                 <Textarea rows={2} value={a.descripcion} onChange={(e) => cambiar({ descripcion: e.target.value })} />
               </div>
+              <div className="flex items-end gap-3">
+                <div className="w-28 shrink-0 space-y-1">
+                  <Label className="text-xs text-muted-foreground">Stock mínimo</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="—"
+                    value={a.stockMinimo ?? ""}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      cambiar({ stockMinimo: Number.isNaN(n) ? null : Math.max(0, n) });
+                    }}
+                    aria-label="Stock mínimo"
+                  />
+                </div>
+                <p className="pb-2 text-xs text-muted-foreground">Opcional. Si el total baja de aquí, el artículo sale marcado como «Bajo mínimo».</p>
+              </div>
             </div>
           </Seccion>
 
@@ -274,6 +379,11 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
             {a.existencias.length === 0 && (
               <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
                 Todavía no está en ninguna zona. Añade una ubicación y cuántos hay.
+              </p>
+            )}
+            {a.existencias.some((e) => !e.elementoId) && (
+              <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                Hay cantidades «Sin ubicar» (su zona se borró del mapa). Elige en qué zona están ahora.
               </p>
             )}
             {a.existencias.map((x) => (
@@ -382,6 +492,19 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
               </div>
             ))}
           </Seccion>
+
+          {!esNuevo && (
+            <Seccion
+              titulo="Últimos cambios"
+              accion={
+                <Link to={`/historial?articulo=${a.id}`} className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  Ver todo
+                </Link>
+              }
+            >
+              <UltimosCambios articuloId={a.id} />
+            </Seccion>
+          )}
         </div>
 
         <div className="flex items-center gap-2 border-t px-5 py-3">
@@ -403,7 +526,7 @@ export function FichaArticulo({ inicial, esNuevo, elementos, categorias, onCerra
         <AlertDialog open={confirmarBorrado} onOpenChange={setConfirmarBorrado}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Borrar «{inicial.nombre}»?</AlertDialogTitle>
+              <AlertDialogTitle>¿Borrar «{base.nombre}»?</AlertDialogTitle>
               <AlertDialogDescription>
                 Se borran el artículo, sus fotos y lo que hay apuntado en cada zona. No se puede deshacer.
               </AlertDialogDescription>

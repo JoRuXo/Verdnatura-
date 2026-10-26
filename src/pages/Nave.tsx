@@ -1,21 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import {
-  ChevronRight,
-  Grid3x3,
-  ListTree,
-  Maximize,
-  Moon,
-  MousePointerClick,
-  Package,
-  Pencil,
-  Plus,
-  Route,
-  Sun,
-  X,
-} from "lucide-react";
+import { ChevronRight, Grid3x3, ListTree, Maximize, MousePointerClick, Package, Pencil, Route, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -29,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -37,16 +25,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { MenuGeneral } from "@/components/MenuGeneral";
 import { esGamaLigera } from "@/nave/dispositivo";
-import { TIPOS, agruparPorCategoria, duplicar, nuevoElemento, referenciaDe, textoSentido, type Elemento } from "@/nave/elementos";
-import { guardarMapa, useMapa } from "@/nave/useMapa";
+import { agruparPorCategoria, duplicar, nuevoElemento, type Elemento } from "@/nave/elementos";
+import type { Rect } from "@/nave/plano";
+import { diferencias, guardarMapa, useMapa } from "@/nave/useMapa";
 import { useEditor } from "@/nave/useEditor";
 import { PanelEdicion } from "@/nave/PanelEdicion";
 import { BarraEdicion } from "@/nave/BarraEdicion";
-import type { EdicionEscena, RefCentro } from "@/nave/EscenaNave";
+import { PanelArticulo, PanelZona } from "@/nave/Paneles";
+import type { EdicionEscena, Encuadre, RefCentro } from "@/nave/EscenaNave";
 import { useArticulos } from "@/articulos/useArticulos";
-import { articuloVacio, urlFoto, type Articulo } from "@/articulos/modelo";
+import { articuloVacio, cantidadEn, type Articulo } from "@/articulos/modelo";
 import { FichaArticulo } from "@/articulos/FichaArticulo";
+import { Buscador, type AccionBuscador } from "@/buscador/Buscador";
+import { DialogoExportar } from "@/exportar/DialogoExportar";
 
 // Three.js pesa bastante: se carga aparte para que la página aparezca enseguida
 const EscenaNave = lazy(() => import("@/nave/EscenaNave"));
@@ -97,141 +90,6 @@ function BotonFlotante({
   );
 }
 
-function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3 py-1.5 text-sm">
-      <dt className="text-muted-foreground">{etiqueta}</dt>
-      <dd className="text-right font-medium">{children}</dd>
-    </div>
-  );
-}
-
-/** Lo que hay guardado en una zona: cada artículo con su cantidad allí. */
-function QueHayAqui({
-  zona,
-  articulos,
-  cargando,
-  onAbrir,
-  onNuevo,
-}: {
-  zona: Elemento;
-  articulos: Articulo[];
-  cargando: boolean;
-  onAbrir: (a: Articulo, ponerAqui: boolean) => void;
-  onNuevo: () => void;
-}) {
-  const estaAqui = (a: Articulo) => a.existencias.some((e) => e.elementoId === zona.id);
-  const aqui = articulos.filter(estaAqui).map((a) => ({
-    a,
-    cantidad: a.existencias.filter((e) => e.elementoId === zona.id).reduce((s, e) => s + e.cantidad, 0),
-  }));
-  const otros = articulos.filter((a) => !estaAqui(a));
-
-  return (
-    <section className="mt-4">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Qué hay aquí</h3>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="h-8 gap-1.5">
-              <Plus className="h-3.5 w-3.5" /> Añadir
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="max-h-[50vh] w-60 overflow-y-auto">
-            <DropdownMenuItem onSelect={onNuevo}>
-              <Plus className="mr-2 h-4 w-4" /> Artículo nuevo…
-            </DropdownMenuItem>
-            {otros.length > 0 && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs text-muted-foreground">Uno que ya existe</DropdownMenuLabel>
-                {otros.map((a) => (
-                  <DropdownMenuItem key={a.id} onSelect={() => onAbrir(a, true)}>
-                    <span className="truncate">{a.nombre}</span>
-                    <span className="ml-auto pl-2 text-xs text-muted-foreground">{a.categoria}</span>
-                  </DropdownMenuItem>
-                ))}
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      {cargando && <p className="text-sm text-muted-foreground">Cargando…</p>}
-      {!cargando && aqui.length === 0 && (
-        <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
-          No hay nada apuntado en esta zona.
-        </p>
-      )}
-      {aqui.length > 0 && (
-        <ul className="divide-y rounded-lg border">
-          {aqui.map(({ a, cantidad }) => (
-            <li key={a.id}>
-              <button
-                type="button"
-                onClick={() => onAbrir(a, false)}
-                className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-accent"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white">
-                  {a.fotos[0] ? (
-                    <img src={urlFoto(a.fotos[0])} alt="" loading="lazy" className="h-full w-full object-contain" />
-                  ) : (
-                    <Package className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{a.nombre}</span>
-                  {a.categoria && <span className="block truncate text-xs text-muted-foreground">{a.categoria}</span>}
-                </span>
-                <span className="shrink-0 text-right text-sm">
-                  <span className="font-semibold">{cantidad}</span> <span className="text-xs text-muted-foreground">{a.unidad}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function PanelZona({ zona, onVolver, children }: { zona: Elemento; onVolver: () => void; children?: ReactNode }) {
-  const sentido = textoSentido(zona);
-  return (
-    <aside
-      key={zona.id}
-      className={cn(
-        "absolute z-20 overflow-y-auto rounded-xl border bg-card/95 p-4 shadow-xl backdrop-blur",
-        "inset-x-3 bottom-3 max-h-[60dvh] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:max-h-[calc(100dvh-6rem)] sm:w-80",
-        "animate-in fade-in slide-in-from-bottom-6 duration-700 sm:slide-in-from-bottom-0 sm:slide-in-from-right-6",
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: zona.color }} />
-            <h2 className="truncate text-lg font-semibold">{zona.nombre}</h2>
-          </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">{zona.categoria}</p>
-        </div>
-        <Button variant="ghost" size="icon" className="-mr-2 -mt-1 h-8 w-8 shrink-0" onClick={onVolver} aria-label="Volver a la nave">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      {zona.descripcion && <p className="mt-3 text-sm text-muted-foreground">{zona.descripcion}</p>}
-      <dl className="mt-3 divide-y rounded-lg border px-3">
-        <Dato etiqueta="Tipo">{TIPOS[zona.tipo]}</Dato>
-        {sentido && <Dato etiqueta="Sentido">{sentido}</Dato>}
-        {zona.muelle && <Dato etiqueta="Llega a">{zona.muelle}</Dato>}
-        <Dato etiqueta="Posición en el plano">{referenciaDe(zona.area)}</Dato>
-      </dl>
-      {children}
-      <Button className="mt-4 w-full" variant="secondary" onClick={onVolver}>
-        Volver a la nave
-      </Button>
-    </aside>
-  );
-}
-
 /** Lista de zonas por categoría: la forma cómoda de llegar a una línea fina desde el móvil. */
 function MenuZonas({
   elementos,
@@ -246,9 +104,9 @@ function MenuZonas({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-10 gap-2 bg-card/90 px-3 shadow-md backdrop-blur" aria-label="Zonas">
+        <Button variant="outline" className="h-10 gap-2 bg-card/90 px-3 shadow-md backdrop-blur" aria-label="Zonas" title="Zonas">
           <ListTree className="h-4 w-4" />
-          <span className="hidden sm:inline">Zonas</span>
+          <span className="hidden lg:inline">Zonas</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-[70vh] w-60 overflow-y-auto">
@@ -285,7 +143,7 @@ function Ayuda({ onCerrar }: { onCerrar: () => void }) {
         <p className="text-muted-foreground">
           <span className="hidden sm:inline">Arrastra para moverte · clic derecho para girar · rueda para acercar.</span>
           <span className="sm:hidden">Un dedo para moverte · dos dedos para girar y acercar.</span>{" "}
-          <span className="text-foreground">Toca una zona para entrar, o búscala en «Zonas».</span>
+          <span className="text-foreground">Toca una zona para entrar, o usa la lupa para buscar un artículo.</span>
         </p>
         <button type="button" onClick={onCerrar} className="ml-auto text-muted-foreground hover:text-foreground" aria-label="Cerrar ayuda">
           <X className="h-4 w-4" />
@@ -306,14 +164,30 @@ const teclaAjena = (e: KeyboardEvent) => {
   return escribiendo || !!t.closest?.("[role=dialog], [role=alertdialog], [role=menu], [role=listbox]");
 };
 
+/** Rectángulo que contiene a todos. */
+const unir = (areas: Rect[]): Rect => ({
+  x0: Math.min(...areas.map((r) => r.x0)),
+  y0: Math.min(...areas.map((r) => r.y0)),
+  x1: Math.max(...areas.map((r) => r.x1)),
+  y1: Math.max(...areas.map((r) => r.y1)),
+});
+
+type Ficha = { articulo: Articulo; esNuevo: boolean; anadirEn?: string };
+type BorradoZona = { elemento: Elemento; articulos: { a: Articulo; cantidad: number }[] };
+
 const Nave = () => {
   const { zonaId } = useParams();
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const mapa = useMapa();
   const editor = useEditor(mapa.elementos);
   const articulos = useArticulos();
-  const [ficha, setFicha] = useState<{ articulo: Articulo; esNuevo: boolean } | null>(null);
+  const listaArticulos = useMemo(() => articulos.data ?? [], [articulos.data]);
+  const [ficha, setFicha] = useState<Ficha | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const [borradoZona, setBorradoZona] = useState<BorradoZona | null>(null);
   const [referencias, setReferencias] = useState(true);
   const [vistaKey, setVistaKey] = useState(0);
   const [ayuda, setAyuda] = useState(true);
@@ -326,10 +200,28 @@ const Nave = () => {
   const elementos = editor.activo ? editor.borrador : mapa.elementos;
   const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId);
 
-  // Una dirección de zona que no existe vuelve a la vista general (cuando ya se ha cargado el mapa)
+  // Artículo buscado (/?articulo=...): sus zonas se señalan en el mapa con la cantidad
+  const articuloFoco = !zonaId && !editor.activo ? listaArticulos.find((a) => a.id === params.get("articulo")) : undefined;
+  const foco = useMemo(() => {
+    if (!articuloFoco) return null;
+    const zonas = mapa.elementos.filter((e) => articuloFoco.existencias.some((x) => x.elementoId === e.id));
+    const encuadre: Encuadre | undefined = zonas.length
+      ? { id: `articulo:${articuloFoco.id}`, area: unir(zonas.map((z) => z.area)) }
+      : undefined;
+    return {
+      encuadre,
+      resaltadas: new Set(zonas.map((z) => z.id)),
+      marcas: new Map(zonas.map((z) => [z.id, String(cantidadEn(articuloFoco, z.id))])),
+    };
+  }, [articuloFoco, mapa.elementos]);
+
+  // Una dirección de zona (o de artículo) que no existe vuelve a la vista general
   useEffect(() => {
     if (zonaId && !zona && !mapa.cargando && !editor.activo) navigate("/", { replace: true });
   }, [zonaId, zona, mapa.cargando, editor.activo, navigate]);
+  useEffect(() => {
+    if (params.get("articulo") && !articuloFoco && articulos.isSuccess && !zonaId && !editor.activo) navigate("/", { replace: true });
+  }, [params, articuloFoco, articulos.isSuccess, zonaId, editor.activo, navigate]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setAyuda(false), 9000);
@@ -344,10 +236,25 @@ const Nave = () => {
     },
     [navigate],
   );
+  const verArticulo = useCallback(
+    (a: Articulo) => {
+      setAyuda(false);
+      setFicha(null);
+      navigate(`/?articulo=${a.id}`);
+    },
+    [navigate],
+  );
+
+  const accionBuscador = (accion: AccionBuscador) => {
+    if (accion === "catalogo") navigate("/articulos");
+    else if (accion === "nuevo") navigate("/articulos/nuevo");
+    else if (accion === "historial") navigate("/historial");
+    else setExportando(true);
+  };
 
   const empezarEdicion = () => {
     setAyuda(false);
-    if (zonaId) navigate("/");
+    if (zonaId || articuloFoco) navigate("/");
     editor.entrar();
   };
 
@@ -356,13 +263,36 @@ const Nave = () => {
     else editor.salir();
   };
 
+  /** Antes de borrar una zona con artículos, se avisa de que se quedarán sin ubicar. */
+  const pedirBorrado = useCallback(
+    (id: string) => {
+      const elemento = editor.borrador.find((e) => e.id === id);
+      if (!elemento) return;
+      const aqui = listaArticulos
+        .filter((a) => a.existencias.some((e) => e.elementoId === id))
+        .map((a) => ({ a, cantidad: cantidadEn(a, id) }));
+      if (aqui.length) setBorradoZona({ elemento, articulos: aqui });
+      else editor.borrar(id);
+    },
+    [editor, listaArticulos],
+  );
+
   const guardar = async () => {
     setGuardando(true);
     try {
-      await guardarMapa(mapa.elementos, editor.borrador);
+      const { borrados } = diferencias(editor.base, editor.borrador);
+      const quedanSinUbicar = listaArticulos.filter((a) => a.existencias.some((e) => e.elementoId && borrados.includes(e.elementoId)));
+      await guardarMapa(editor.base, editor.borrador);
       const nuevos = await mapa.recargar();
       if (nuevos) editor.restablecer(nuevos);
-      toast.success("Mapa guardado");
+      if (quedanSinUbicar.length) {
+        void articulos.refetch();
+        toast.success("Mapa guardado", {
+          description: `${quedanSinUbicar.length === 1 ? "1 artículo ha quedado" : `${quedanSinUbicar.length} artículos han quedado`} sin ubicar.`,
+          action: { label: "Verlos", onClick: () => navigate("/articulos?ver=sin-ubicar") },
+          duration: 10_000,
+        });
+      } else toast.success("Mapa guardado");
     } catch (err) {
       toast.error("No se ha podido guardar el mapa", { description: (err as Error).message });
     } finally {
@@ -370,28 +300,46 @@ const Nave = () => {
     }
   };
 
+  // Si otra persona guarda el mapa mientras se edita, se avisa (al guardar no se pisa lo suyo)
+  const avisadoRef = useRef("");
+  useEffect(() => {
+    if (!editor.activo || guardando || !mapa.guardable) return;
+    const firma = JSON.stringify(mapa.elementos);
+    if (firma === JSON.stringify(editor.base) || firma === avisadoRef.current) return;
+    avisadoRef.current = firma;
+    toast.info("Otra persona ha cambiado el mapa mientras editabas", {
+      description: "Al guardar se mantiene lo suyo; solo se cambia lo que tú has tocado.",
+      duration: 8000,
+    });
+    // Solo interesa cuando llega un mapa nuevo de la base de datos
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapa.elementos]);
+
   const anadir = (tipo: Elemento["tipo"], modelo: string | null) => {
     const [x, y] = centroRef.current?.() ?? [55, 10];
     editor.anadir(nuevoElemento(tipo, modelo, x, y));
   };
 
-  // Atajos del modo edición: Supr borra, Ctrl+Z deshace, Esc quita la selección
+  // Atajos: Ctrl+K o / buscan; en edición Supr borra, Ctrl+Z deshace y Esc quita la selección
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (teclaAjena(e)) return;
-      if (editor.activo) {
+      if (!editor.activo && ((e.key.toLowerCase() === "k" && (e.ctrlKey || e.metaKey)) || e.key === "/")) {
+        e.preventDefault();
+        setBuscando(true);
+      } else if (editor.activo) {
         if ((e.key === "Delete" || e.key === "Backspace") && editor.seleccion) {
           e.preventDefault();
-          editor.borrar(editor.seleccion);
+          pedirBorrado(editor.seleccion);
         } else if (e.key.toLowerCase() === "z" && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           editor.deshacer();
         } else if (e.key === "Escape") editor.seleccionar(null);
-      } else if (e.key === "Escape" && zona) volver();
+      } else if (e.key === "Escape" && (zona || articuloFoco)) volver();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editor, zona, volver]);
+  }, [editor, zona, articuloFoco, volver, pedirBorrado]);
 
   // Aviso del navegador si se cierra la pestaña con cambios sin guardar
   useEffect(() => {
@@ -420,29 +368,24 @@ const Nave = () => {
 
   const categorias = useMemo(() => [...new Set(elementos.map((e) => e.categoria).filter(Boolean))], [elementos]);
   const categoriasArticulos = useMemo(
-    () => [...new Set((articulos.data ?? []).map((a) => a.categoria).filter(Boolean))].sort(),
-    [articulos.data],
+    () => [...new Set(listaArticulos.map((a) => a.categoria).filter(Boolean))].sort(),
+    [listaArticulos],
   );
-
-  /** Abre la ficha de un artículo; con `ponerAqui` le añade una fila para esta zona. */
-  const abrirArticulo = (a: Articulo, ponerAqui: boolean) => {
-    if (!zona) return;
-    setFicha({
-      articulo: ponerAqui
-        ? { ...a, existencias: [...a.existencias, { id: crypto.randomUUID(), elementoId: zona.id, cantidad: 0, nota: "" }] }
-        : a,
-      esNuevo: false,
-    });
-  };
   const oscuro = resolvedTheme === "dark";
   const seleccionado = editor.seleccionado;
+  const vistaGeneral = () => {
+    if (zona || articuloFoco) volver();
+    else setVistaKey((k) => k + 1);
+  };
 
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-background">
       <Suspense fallback={<Cargando />}>
         <EscenaNave
           elementos={elementos}
-          zona={zona}
+          zona={zona ?? foco?.encuadre}
+          resaltadas={foco?.resaltadas}
+          marcas={foco?.marcas}
           oscuro={oscuro}
           referencias={referencias}
           flujos={flujos}
@@ -454,17 +397,17 @@ const Nave = () => {
       </Suspense>
 
       {/* Cabecera y miga de pan */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 sm:p-4">
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-4">
         <div className="pointer-events-auto min-w-0 rounded-xl border bg-card/90 px-3 py-2 shadow-md backdrop-blur">
           <div className="text-base font-bold leading-tight">Verdnatura</div>
           <nav className="flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground" aria-label="Ubicación">
-            <button type="button" onClick={volver} className={cn("hover:text-foreground", !zona && "text-foreground")}>
+            <button type="button" onClick={volver} className={cn("hover:text-foreground", !zona && !articuloFoco && "text-foreground")}>
               Nave Holland
             </button>
-            {zona && (
+            {(zona || articuloFoco) && (
               <>
                 <ChevronRight className="h-3 w-3 shrink-0" />
-                <span className="truncate font-medium text-foreground animate-in fade-in duration-500">{zona.nombre}</span>
+                <span className="truncate font-medium text-foreground animate-in fade-in duration-500">{zona?.nombre ?? articuloFoco?.nombre}</span>
               </>
             )}
             {editor.activo && (
@@ -477,6 +420,19 @@ const Nave = () => {
         </div>
 
         <div className="pointer-events-auto flex shrink-0 gap-1.5 sm:gap-2">
+          {!editor.activo && (
+            <Button
+              variant="outline"
+              onClick={() => setBuscando(true)}
+              aria-label="Buscar"
+              title="Buscar (Ctrl+K)"
+              className="h-10 w-10 gap-2 bg-card/90 px-0 shadow-md backdrop-blur lg:w-auto lg:px-3"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden text-muted-foreground lg:inline">Buscar…</span>
+              <kbd className="hidden rounded border bg-muted px-1.5 text-[10px] text-muted-foreground lg:inline">Ctrl K</kbd>
+            </Button>
+          )}
           <BotonFlotante titulo="Artículos" onClick={() => navigate("/articulos")}>
             <Package className="h-4 w-4" />
           </BotonFlotante>
@@ -493,16 +449,10 @@ const Nave = () => {
           >
             <Pencil className="h-4 w-4" />
           </BotonFlotante>
-          <BotonFlotante
-            titulo="Vista general"
-            onClick={() => {
-              if (zona) volver();
-              else setVistaKey((k) => k + 1);
-            }}
-          >
+          {/* En el móvil no caben: van dentro del menú */}
+          <BotonFlotante titulo="Vista general" className="hidden sm:inline-flex" onClick={vistaGeneral}>
             <Maximize className="h-4 w-4" />
           </BotonFlotante>
-          {/* En el móvil no cabe y allí las flechas van quietas de serie (batería) */}
           <BotonFlotante
             titulo="Flechas de flujo en movimiento"
             activo={flujos}
@@ -511,12 +461,28 @@ const Nave = () => {
           >
             <Route className="h-4 w-4" />
           </BotonFlotante>
-          <BotonFlotante titulo="Referencias del plano (A–K, 1–4)" activo={referencias} onClick={() => setReferencias((r) => !r)}>
+          <BotonFlotante
+            titulo="Referencias del plano (A–K, 1–4)"
+            activo={referencias}
+            className="hidden sm:inline-flex"
+            onClick={() => setReferencias((r) => !r)}
+          >
             <Grid3x3 className="h-4 w-4" />
           </BotonFlotante>
-          <BotonFlotante titulo="Cambiar tema" className="hidden sm:inline-flex" onClick={() => setTheme(oscuro ? "light" : "dark")}>
-            {oscuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </BotonFlotante>
+          <MenuGeneral>
+            <div className="sm:hidden">
+              <DropdownMenuItem onSelect={vistaGeneral} className="gap-2">
+                <Maximize className="h-4 w-4" /> Vista general
+              </DropdownMenuItem>
+              <DropdownMenuCheckboxItem checked={flujos} onCheckedChange={(v) => setFlujos(v === true)}>
+                Flechas en movimiento
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={referencias} onCheckedChange={(v) => setReferencias(v === true)}>
+                Referencias del plano (A–K, 1–4)
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuSeparator />
+            </div>
+          </MenuGeneral>
         </div>
       </header>
 
@@ -527,26 +493,49 @@ const Nave = () => {
       )}
 
       {zona && (
-        <PanelZona zona={zona} onVolver={volver}>
-          <QueHayAqui
-            zona={zona}
-            articulos={articulos.data ?? []}
-            cargando={articulos.isLoading}
-            onAbrir={abrirArticulo}
-            onNuevo={() => setFicha({ articulo: articuloVacio(zona.id), esNuevo: true })}
-          />
-        </PanelZona>
+        <PanelZona
+          zona={zona}
+          articulos={listaArticulos}
+          cargando={articulos.isLoading}
+          onVolver={volver}
+          onAbrir={(a, ponerAqui) => setFicha({ articulo: a, esNuevo: false, anadirEn: ponerAqui ? zona.id : undefined })}
+          onNuevo={() => setFicha({ articulo: articuloVacio(zona.id), esNuevo: true })}
+        />
       )}
+      {articuloFoco && (
+        <PanelArticulo
+          articulo={articuloFoco}
+          elementos={mapa.elementos}
+          onZona={(z) => elegirZona(z.clave)}
+          onAbrirFicha={() => setFicha({ articulo: articuloFoco, esNuevo: false })}
+          onCerrar={volver}
+        />
+      )}
+      {ayuda && !zona && !articuloFoco && !editor.activo && <Ayuda onCerrar={() => setAyuda(false)} />}
+
       {ficha && (
         <FichaArticulo
+          key={ficha.articulo.id}
           inicial={ficha.articulo}
           esNuevo={ficha.esNuevo}
+          anadirEn={ficha.anadirEn}
           elementos={mapa.elementos}
           categorias={categoriasArticulos}
           onCerrar={() => setFicha(null)}
+          onVerEnMapa={verArticulo}
         />
       )}
-      {ayuda && !zona && !editor.activo && <Ayuda onCerrar={() => setAyuda(false)} />}
+
+      <Buscador
+        abierto={buscando}
+        onCerrar={() => setBuscando(false)}
+        articulos={listaArticulos}
+        elementos={mapa.elementos}
+        onArticulo={verArticulo}
+        onZona={(z) => elegirZona(z.clave)}
+        onAccion={accionBuscador}
+      />
+      <DialogoExportar abierto={exportando} onCerrar={() => setExportando(false)} />
 
       {editor.activo && seleccionado && (
         <PanelEdicion
@@ -555,7 +544,7 @@ const Nave = () => {
           onCambiar={(cambios, conHistorial) => editor.cambiar(seleccionado.id, cambios, conHistorial)}
           onRegistrar={editor.registrar}
           onDuplicar={() => editor.anadir(duplicar(seleccionado))}
-          onBorrar={() => editor.borrar(seleccionado.id)}
+          onBorrar={() => pedirBorrado(seleccionado.id)}
           onCerrar={() => editor.seleccionar(null)}
         />
       )}
@@ -573,6 +562,48 @@ const Nave = () => {
           onTerminar={terminarEdicion}
         />
       )}
+
+      <AlertDialog open={!!borradoZona} onOpenChange={(abrir) => !abrir && setBorradoZona(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Borrar «{borradoZona?.elemento.nombre}»?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  En {borradoZona?.elemento.tipo === "puesto" ? "este objeto" : "esta zona"} hay{" "}
+                  {borradoZona?.articulos.length === 1 ? "1 artículo apuntado" : `${borradoZona?.articulos.length} artículos apuntados`}:
+                </p>
+                <ul className="max-h-40 divide-y overflow-y-auto rounded-lg border text-foreground">
+                  {borradoZona?.articulos.map(({ a, cantidad }) => (
+                    <li key={a.id} className="flex justify-between gap-3 px-3 py-1.5">
+                      <span className="truncate">{a.nombre}</span>
+                      <span className="shrink-0 font-semibold tabular-nums">
+                        {cantidad} <span className="text-xs font-normal text-muted-foreground">{a.unidad}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p>
+                  Si la borras y guardas el mapa, esas cantidades no se pierden: quedan como <strong>«Sin ubicar»</strong> en el catálogo
+                  para que las coloques en otra zona.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No borrar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (borradoZona) editor.borrar(borradoZona.elemento.id);
+                setBorradoZona(null);
+              }}
+            >
+              Borrar igualmente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmarSalida} onOpenChange={setConfirmarSalida}>
         <AlertDialogContent>

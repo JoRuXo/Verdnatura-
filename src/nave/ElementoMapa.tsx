@@ -73,9 +73,11 @@ type Props = {
   onElegir: (clave: string) => void;
   /** Solo en modo edición. */
   edicion: Edicion | null;
+  /** Rótulo fijo encima (p. ej. la cantidad de un artículo buscado). */
+  marca?: string;
 };
 
-export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion }: Props) {
+export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion, marca }: Props) {
   const [encima, setEncima] = useState(false);
   const esObjeto = elemento.tipo === "puesto";
   useCursor(encima && !activa, edicion ? "move" : "pointer");
@@ -151,7 +153,8 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
         <Line points={borde} color={color} lineWidth={activa || encima ? 2.5 : 1.5} transparent opacity={atenuada ? 0.25 : 1} />
       )}
       {elemento.tipo === "estanteria" && <EstanteriaElemento elemento={elemento} opacidad={atenuada ? 0.3 : 1} />}
-      {esObjeto && <PiezasPuesto elemento={elemento} opacidad={atenuada ? 0.35 : 1} oculta={atenuada} />}
+      {/* Con marca, su rótulo ya lleva el nombre: el fijo del objeto sobra */}
+      {esObjeto && <PiezasPuesto elemento={elemento} opacidad={atenuada ? 0.35 : 1} oculta={atenuada || !!marca} />}
 
       {!esObjeto && (
         <NombreSuelo elemento={elemento} m={m} contorno={contorno} atenuado={atenuada} eventos={eventos} />
@@ -165,6 +168,18 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
             style={{ backgroundColor: color }}
           >
             {elemento.nombre}
+          </div>
+        </Html>
+      )}
+
+      {marca && (
+        <Html position={[cx, 2.6, cz]} center zIndexRange={[9, 7]} style={{ pointerEvents: "none" }}>
+          <div
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold text-white shadow-lg ring-2 ring-white animate-in fade-in zoom-in-75 duration-500"
+            style={{ backgroundColor: color }}
+          >
+            {elemento.nombre}
+            <span className="rounded-full bg-white/25 px-1.5 tabular-nums">{marca}</span>
           </div>
         </Html>
       )}

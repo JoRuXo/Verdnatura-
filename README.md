@@ -14,8 +14,74 @@ valor libres). El stock es la cantidad que hay en cada zona del mapa; el total
 es la suma.
 
 Desde el mapa, al entrar en una zona, el panel «Qué hay aquí» lista los
-artículos de esa zona con su cantidad. «Añadir» crea un artículo nuevo ya
+artículos de esa zona con su cantidad y botones **+ / −** para contar (tocando
+el número se escribe la cantidad exacta). «Añadir» crea un artículo nuevo ya
 colocado en la zona o pone aquí uno que ya existe.
+
+Cada artículo puede tener un **stock mínimo** opcional: si el total baja de ahí
+sale marcado «Bajo mínimo» en el catálogo, el buscador y los informes.
+
+Si se borra del mapa una zona con artículos, la app avisa antes; sus
+cantidades no se pierden, quedan **«Sin ubicar»** y el catálogo las señala
+para colocarlas en otra zona.
+
+## Buscar
+
+La lupa del mapa (o Ctrl+K, o «/») busca artículos por nombre, categoría,
+características o zona, y zonas del mapa, sin importar tildes ni mayúsculas.
+Al elegir un artículo, el mapa señala todas las zonas donde está con su
+cantidad (`/?articulo=<id>`). Sin escribir nada salen lo visto hace poco y lo
+que está por debajo del mínimo.
+
+## Historial y varias personas a la vez
+
+La primera vez que se abre la app en un dispositivo pide un nombre (no es una
+contraseña; se cambia desde el menú). Cada petición a Supabase lo lleva en la
+cabecera `x-autor` y unos disparadores de la base de datos apuntan en la tabla
+`historial` todo lo que cambia: cantidades, artículos y mapa, con quién y
+cuándo. Se ve en `/historial` (con filtros por persona, tipo, artículo y zona)
+y en la ficha de cada artículo.
+
+Para que varias personas no se pisen:
+- los botones + / − suman o restan en la propia base de datos
+  (`ajustar_existencia`), y los toques seguidos se mandan juntos;
+- la ficha solo guarda lo que se ha cambiado y, si otra persona tocó eso mismo
+  mientras tanto, no guarda y avisa de qué ha cambiado;
+- el editor del mapa compara con el mapa de cuando se empezó a editar, así que
+  al guardar no deshace lo que otro haya guardado entretanto;
+- los cambios de los demás llegan al momento (Supabase Realtime) y la app se
+  actualiza sola. El punto verde del menú indica que está conectado.
+
+## Exportar el stock
+
+Menú → «Exportar stock», o el botón «Exportar» del catálogo. Se elige:
+- **Excel**: resumen con los números clave y los avisos, una hoja por artículo
+  (foto, total, mínimo, estado, dónde está, características) y otra por zona
+  con el color de cada zona;
+- **PDF**: lo mismo, listo para imprimir o mandar.
+
+Se genera en el propio navegador (`src/exportar`), con fotos o sin ellas.
+
+## Siempre encendida y copias de seguridad
+
+`api/mantenimiento.js` es una función de Vercel que el cron de `vercel.json`
+lanza cada noche (03:17 UTC). Lee la base de datos, así el proyecto gratuito de
+Supabase no se pausa por falta de uso, y guarda una copia de todo (mapa,
+artículos, existencias e historial) en el bucket privado `copias`, un JSON por
+día. Desde la app solo se puede subir a ese bucket, no leer ni borrar; las
+copias se descargan desde el panel de Supabase (Storage → copias).
+
+## App en el móvil
+
+Tiene manifiesto e iconos: en Android, el menú ofrece «Instalar en este
+dispositivo»; en iPhone, desde Safari, Compartir → «Añadir a pantalla de
+inicio». El tema (claro, oscuro o el del dispositivo) se elige en el menú.
+
+## En pausa
+
+- **Códigos QR por zona** (`src/qr`): etiquetas para imprimir y pegar en la
+  nave que abren esa zona al escanearlas. Hechas pero apagadas; se activan
+  poniendo `codigosQR: true` en `src/funciones.ts`.
 
 Las fotos se reducen en el navegador (lado mayor 1600 px, JPEG) antes de
 subirlas al bucket `fotos-articulos` de Supabase. Las que se suben y luego se
@@ -73,6 +139,21 @@ cotas: cuando haya una medida real basta con reescalar los números de
 
 Tablas en Supabase: `articulos` y `existencias` (cantidad de un artículo en un
 elemento del mapa; si se borra la zona, la existencia queda «sin ubicar»).
+
+## Resto del código
+
+| Carpeta / archivo | Qué contiene |
+| --- | --- |
+| `src/nave/Paneles.tsx` | Panel de zona («Qué hay aquí» con + / −) y panel del artículo buscado. |
+| `src/buscador` | Buscador del mapa y los vistos hace poco. |
+| `src/historial` | Lectura del historial, cómo se cuenta cada cambio y su lista. |
+| `src/exportar` | Datos del informe, Excel (ExcelJS), PDF (jsPDF) y el diálogo. |
+| `src/lib/autor.ts`, `src/components/DialogoAutor.tsx` | Nombre de quien usa la app y el diálogo para ponerlo. |
+| `src/lib/tiempoReal.ts` | Escucha los cambios de los demás y refresca. |
+| `src/lib/texto.ts` | Búsqueda sin tildes y con puntuación. |
+| `src/components/MenuGeneral.tsx` | Menú de la cabecera: exportar, historial, tema, nombre, instalar. |
+| `src/funciones.ts` | Funciones hechas pero apagadas. |
+| `api/mantenimiento.js` | Tarea nocturna: mantener Supabase activo y copia de seguridad. |
 
 ## Variables de entorno
 

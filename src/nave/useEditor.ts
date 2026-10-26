@@ -8,9 +8,13 @@ const MAX_HISTORIAL = 50;
 /**
  * Estado del modo edición: un borrador de los elementos que se cambia libremente,
  * con historial para deshacer. Lo guardado no se toca hasta pulsar "Guardar".
+ * Los cambios se miden contra `base` (el mapa al empezar a editar), no contra lo
+ * último guardado: si otra persona cambia el mapa mientras tanto, al guardar no
+ * se deshace lo suyo.
  */
 export function useEditor(guardados: Elemento[]) {
   const [activo, setActivo] = useState(false);
+  const [base, setBase] = useState<Elemento[]>([]);
   const [borrador, setBorrador] = useState<Elemento[]>([]);
   const [historial, setHistorial] = useState<Elemento[][]>([]);
   const [seleccion, setSeleccion] = useState<string | null>(null);
@@ -23,6 +27,7 @@ export function useEditor(guardados: Elemento[]) {
   historialRef.current = historial;
 
   const entrar = useCallback(() => {
+    setBase(guardados);
     setBorrador(guardados);
     setHistorial([]);
     setSeleccion(null);
@@ -81,18 +86,20 @@ export function useEditor(guardados: Elemento[]) {
 
   /** Vuelve a lo guardado (tras descartar o tras guardar con éxito). */
   const restablecer = useCallback((elementos: Elemento[]) => {
+    setBase(elementos);
     setBorrador(elementos);
     setHistorial([]);
     setSeleccion((s) => (s && elementos.some((e) => e.id === s) ? s : null));
   }, []);
 
   const pendientes = useMemo(
-    () => (activo ? diferencias(guardados, borrador).total : 0),
-    [activo, guardados, borrador],
+    () => (activo ? diferencias(base, borrador).total : 0),
+    [activo, base, borrador],
   );
 
   return {
     activo,
+    base,
     borrador,
     seleccion,
     seleccionado: borrador.find((e) => e.id === seleccion) ?? null,

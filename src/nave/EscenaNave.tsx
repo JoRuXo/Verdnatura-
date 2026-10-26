@@ -18,7 +18,7 @@ const grados = THREE.MathUtils.degToRad;
 const GENERAL = { centro: [1, 0.8] as [number, number], ancho: NAVE.ancho + 22, fondo: NAVE.fondo + 10 };
 
 /** Espacio que tapa el panel de zona: a la derecha en pantallas anchas, abajo en móvil. */
-const PANEL = { ancho: 352, alto: 300, corte: 640 };
+const PANEL = { ancho: 384, alto: 300, corte: 640 };
 
 type Hueco = { aspecto: number; fraccionAncho: number; fraccionAlto: number };
 
@@ -65,7 +65,10 @@ function encuadrar(
 /** Función que devuelve el punto del plano al que mira la cámara (para colocar cosas nuevas). */
 export type RefCentro = MutableRefObject<(() => [number, number]) | null>;
 
-type CamaraProps = { zona?: Elemento; vistaKey: number; centroRef?: RefCentro };
+/** Lo que la cámara encuadra: una zona, o el conjunto de zonas donde está un artículo. */
+export type Encuadre = { id: string; area: Rect };
+
+type CamaraProps = { zona?: Encuadre; vistaKey: number; centroRef?: RefCentro };
 
 function Camara({ zona, vistaKey, centroRef }: CamaraProps) {
   const ref = useRef<CameraControlsImpl>(null);
@@ -181,7 +184,12 @@ export type EdicionEscena = {
 
 export type EscenaNaveProps = {
   elementos: Elemento[];
-  zona?: Elemento;
+  /** Zona (o grupo de zonas) en la que está la cámara. */
+  zona?: Encuadre;
+  /** Elementos destacados; si no se pasa, solo el de `zona`. */
+  resaltadas?: ReadonlySet<string>;
+  /** Rótulo encima de algunos elementos (p. ej. cuántos hay de un artículo). */
+  marcas?: ReadonlyMap<string, string>;
   oscuro: boolean;
   referencias: boolean;
   /** Flechas de las líneas en movimiento (pide fotogramas sin parar mientras está activo). */
@@ -195,6 +203,8 @@ export type EscenaNaveProps = {
 export default function EscenaNave({
   elementos,
   zona,
+  resaltadas,
+  marcas,
   oscuro,
   referencias,
   flujos,
@@ -203,6 +213,7 @@ export default function EscenaNave({
   edicion,
   centroRef,
 }: EscenaNaveProps) {
+  const activa = (e: Elemento) => (resaltadas ? resaltadas.has(e.id) : e.id === zona?.id);
   const paleta = oscuro ? PALETA_OSCURA : PALETA_CLARA;
   const ligera = useMemo(esGamaLigera, []);
 
@@ -239,8 +250,9 @@ export default function EscenaNave({
         <ElementoMapa
           key={e.id}
           elemento={e}
-          activa={e.id === zona?.id}
-          atenuada={!!zona && e.id !== zona.id}
+          activa={activa(e)}
+          atenuada={!!zona && !activa(e)}
+          marca={marcas?.get(e.id)}
           flujos={flujos}
           contorno={paleta.suelo}
           onElegir={onElegirZona}

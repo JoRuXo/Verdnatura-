@@ -83,6 +83,7 @@ export type Database = {
           fotos: string[]
           id: string
           nombre: string
+          stock_minimo: number | null
           unidad: string
           updated_at: string
         }
@@ -94,6 +95,7 @@ export type Database = {
           fotos?: string[]
           id?: string
           nombre: string
+          stock_minimo?: number | null
           unidad?: string
           updated_at?: string
         }
@@ -105,6 +107,7 @@ export type Database = {
           fotos?: string[]
           id?: string
           nombre?: string
+          stock_minimo?: number | null
           unidad?: string
           updated_at?: string
         }
@@ -155,12 +158,63 @@ export type Database = {
           },
         ]
       }
+      historial: {
+        Row: {
+          accion: string
+          articulo_id: string | null
+          articulo_nombre: string
+          autor: string
+          cantidad_antes: number | null
+          cantidad_despues: number | null
+          detalle: string
+          elemento_id: string | null
+          elemento_nombre: string
+          fecha: string
+          id: number
+          tipo: string
+          unidad: string
+        }
+        Insert: {
+          accion: string
+          articulo_id?: string | null
+          articulo_nombre?: string
+          autor?: string
+          cantidad_antes?: number | null
+          cantidad_despues?: number | null
+          detalle?: string
+          elemento_id?: string | null
+          elemento_nombre?: string
+          fecha?: string
+          id?: never
+          tipo: string
+          unidad?: string
+        }
+        Update: {
+          accion?: string
+          articulo_id?: string | null
+          articulo_nombre?: string
+          autor?: string
+          cantidad_antes?: number | null
+          cantidad_despues?: number | null
+          detalle?: string
+          elemento_id?: string | null
+          elemento_nombre?: string
+          fecha?: string
+          id?: never
+          tipo?: string
+          unidad?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      ajustar_existencia: {
+        Args: { p_delta: number; p_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

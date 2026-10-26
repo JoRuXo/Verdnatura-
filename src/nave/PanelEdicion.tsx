@@ -3,6 +3,7 @@ import { Copy, RotateCw, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,7 @@ import {
   COLORES,
   MODELOS,
   TIPOS,
+  almacenDeSerie,
   orientacion,
   referenciaDe,
   type Elemento,
@@ -28,6 +30,8 @@ type Props = {
   onDuplicar: () => void;
   onBorrar: () => void;
   onCerrar: () => void;
+  /** Artículos apuntados en este elemento (para avisar si deja de guardar artículos). */
+  articulosAqui?: number;
 };
 
 function Campo({ etiqueta, children, className }: { etiqueta: string; children: ReactNode; className?: string }) {
@@ -45,7 +49,7 @@ function Campo({ etiqueta, children, className }: { etiqueta: string; children: 
 const redondear = (v: number) => Math.round(v * 100) / 100;
 
 /** Propiedades del elemento seleccionado en modo edición. */
-export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, onDuplicar, onBorrar, onCerrar }: Props) {
+export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, onDuplicar, onBorrar, onCerrar, articulosAqui = 0 }: Props) {
   const { x0, y0, x1, y1 } = e.area;
   const ancho = redondear(x1 - x0);
   const fondo = redondear(y1 - y0);
@@ -53,12 +57,15 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
   const sugerencias = [...new Set([...CATEGORIAS_DE_SERIE.map((c) => c.nombre), ...categorias])];
   const listaId = useId();
 
-  const cambiarTipo = (tipo: TipoElemento) =>
+  const cambiarTipo = (tipo: TipoElemento) => {
+    const modelo = tipo === "estanteria" ? "carton" : tipo === "puesto" ? "carros-cc" : null;
     onCambiar({
       tipo,
-      modelo: tipo === "estanteria" ? "carton" : tipo === "puesto" ? "carros-cc" : null,
+      modelo,
       sentido: tipo === "linea" ? (e.sentido ?? 1) : null,
+      almacen: almacenDeSerie(tipo, modelo),
     });
+  };
 
   const cambiarMedida = (campo: "x" | "y" | "ancho" | "fondo", valor: number) => {
     if (!Number.isFinite(valor)) return;
@@ -145,7 +152,7 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
           </Campo>
           {(e.tipo === "estanteria" || e.tipo === "puesto") && (
             <Campo etiqueta="Modelo">
-              <Select value={e.modelo ?? ""} onValueChange={(v) => onCambiar({ modelo: v })}>
+              <Select value={e.modelo ?? ""} onValueChange={(v) => onCambiar({ modelo: v, almacen: almacenDeSerie(e.tipo, v) })}>
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="Elige" />
                 </SelectTrigger>
@@ -180,6 +187,24 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
             </Campo>
           )}
         </div>
+
+        <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-2.5">
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">Se guardan artículos aquí</span>
+            <span className="block text-xs text-muted-foreground">
+              {e.almacen
+                ? "Sale en «Zonas» y se puede entrar desde el mapa para apuntar lo que hay."
+                : "Solo se ve en el mapa: no sale en «Zonas» ni se puede entrar."}
+            </span>
+            {!e.almacen && articulosAqui > 0 && (
+              <span className="block text-xs font-medium text-amber-700 dark:text-amber-400">
+                Tiene {articulosAqui === 1 ? "1 artículo apuntado" : `${articulosAqui} artículos apuntados`}: siguen aquí, pero no se podrá entrar a
+                contarlos.
+              </span>
+            )}
+          </span>
+          <Switch checked={e.almacen} onCheckedChange={(v) => onCambiar({ almacen: v })} aria-label="Se guardan artículos aquí" />
+        </label>
 
         <Campo etiqueta="Categoría (agrupa en el menú Zonas)">
           <Input

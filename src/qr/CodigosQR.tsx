@@ -36,9 +36,11 @@ function Etiqueta({ nombre, categoria, tipo, color, url }: { nombre: string; cat
 
 const CodigosQR = () => {
   const mapa = useMapa();
-  const grupos = useMemo(() => agruparPorCategoria(mapa.elementos), [mapa.elementos]);
+  // Solo tienen etiqueta los sitios donde se guardan artículos
+  const zonas = useMemo(() => mapa.elementos.filter((e) => e.almacen), [mapa.elementos]);
+  const grupos = useMemo(() => agruparPorCategoria(zonas), [zonas]);
   const [elegidas, setElegidas] = useState<Set<string> | null>(null);
-  const seleccion = elegidas ?? new Set(mapa.elementos.map((e) => e.id));
+  const seleccion = elegidas ?? new Set(zonas.map((e) => e.id));
   const alternar = (id: string) =>
     setElegidas(() => {
       const s = new Set(seleccion);
@@ -67,7 +69,7 @@ const CodigosQR = () => {
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-4 print:max-w-none print:p-0">
         <details className="rounded-lg border p-3 print:hidden">
           <summary className="cursor-pointer text-sm font-medium">
-            Elegir zonas ({seleccion.size} de {mapa.elementos.length})
+            Elegir zonas ({seleccion.size} de {zonas.length})
           </summary>
           <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-3">
             {grupos.flatMap((g) =>
@@ -83,7 +85,7 @@ const CodigosQR = () => {
         </details>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-2">
-          {mapa.elementos
+          {zonas
             .filter((z) => seleccion.has(z.id))
             .map((z) => (
               <Etiqueta key={z.id} nombre={z.nombre} categoria={z.categoria} tipo={TIPOS[z.tipo]} color={z.color} url={urlZona(z.clave)} />

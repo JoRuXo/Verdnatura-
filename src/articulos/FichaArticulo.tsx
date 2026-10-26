@@ -95,7 +95,10 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
   const cambiar = (cambios: Partial<Articulo>) => setA((x) => ({ ...x, ...cambios }));
 
   const zonas = useMemo(
-    () => [...elementos].sort((x, y) => x.categoria.localeCompare(y.categoria) || x.nombre.localeCompare(y.nombre, "es", { numeric: true })),
+    () =>
+      elementos
+        .filter((e) => e.almacen)
+        .sort((x, y) => x.categoria.localeCompare(y.categoria) || x.nombre.localeCompare(y.nombre, "es", { numeric: true })),
     [elementos],
   );
   const nombreZona = (id: string | null) => {

@@ -96,6 +96,7 @@ export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, 
         .slice(0, MAX_ARTICULOS)
         .map((x) => x.a),
       zonas: elementos
+        .filter((z) => z.almacen)
         .map((z) => ({ z, p: puntuar(q, z.nombre, [z.categoria, TIPOS[z.tipo], z.muelle ?? "", z.descripcion]) }))
         .filter((x) => x.p > 0)
         .sort((x, y) => y.p - x.p)

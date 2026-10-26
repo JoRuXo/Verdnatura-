@@ -97,6 +97,13 @@ guarda hasta pulsar «Guardar»; «Deshacer» (Ctrl+Z) vuelve atrás y Supr borr
 lo seleccionado. Los cambios se guardan en la tabla `elementos_mapa` de
 Supabase, así que todo el equipo ve el mismo mapa.
 
+Cada zona u objeto tiene el interruptor **«Se guardan artículos aquí»**. Solo
+los que lo tienen encendido salen en «Zonas», en el buscador y en la ficha de
+los artículos, y solo en ellos se entra tocando el mapa. De serie está apagado
+en las líneas de flujo (entradas, vuelta de vacíos, tumba, frío, plantas, CC
+tumbados, boxes), los PC y los cargadores: se ven y se editan, pero no se
+entra en ellos.
+
 ## Stack
 
 Vite + React + TypeScript + Tailwind + shadcn/ui + Supabase, y para el 3D

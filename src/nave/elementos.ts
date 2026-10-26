@@ -25,8 +25,17 @@ export type Elemento = {
   /** Estanterías: "carton" | "pared". Objetos: "pc" | "cargador" | "carro-bobinas" | "carros-cc". */
   modelo: string | null;
   descripcion: string;
+  /** Se guardan artículos aquí: solo en estos se entra desde el mapa y se apunta stock. */
+  almacen: boolean;
   orden: number;
 };
+
+/**
+ * Si un elemento guarda artículos cuando no se ha dicho nada: las líneas de
+ * flujo no; zonas, estanterías y objetos sí, menos PC y cargadores.
+ */
+export const almacenDeSerie = (tipo: string, modelo: string | null) =>
+  tipo !== "linea" && !(tipo === "puesto" && (modelo === "pc" || modelo === "cargador"));
 
 export const TIPOS: Record<TipoElemento, string> = {
   linea: "Línea",
@@ -102,6 +111,7 @@ const normalizar = (f: FilaInicial | Tables<"elementos_mapa">, id: string, orden
   muelle: f.muelle,
   modelo: f.modelo,
   descripcion: f.descripcion,
+  almacen: "almacen" in f && typeof f.almacen === "boolean" ? f.almacen : almacenDeSerie(f.tipo, f.modelo),
   orden,
 });
 
@@ -125,6 +135,7 @@ export const aFila = (e: Elemento, orden: number): TablesInsert<"elementos_mapa"
   muelle: e.muelle,
   modelo: e.modelo,
   descripcion: e.descripcion,
+  almacen: e.almacen,
   orden,
 });
 
@@ -191,6 +202,7 @@ export function nuevoElemento(tipo: TipoElemento, modelo: string | null, x: numb
     muelle: null,
     modelo,
     descripcion: "",
+    almacen: almacenDeSerie(tipo, modelo),
     orden: 9999,
   };
 }

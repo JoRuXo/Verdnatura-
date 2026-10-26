@@ -78,8 +78,11 @@ type Props = {
 };
 
 export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion, marca }: Props) {
-  const [encima, setEncima] = useState(false);
+  const [ratonEncima, setEncima] = useState(false);
   const esObjeto = elemento.tipo === "puesto";
+  // Las líneas de flujo (y lo que no guarda artículos) solo se tocan en edición
+  const interactivo = !!edicion || elemento.almacen;
+  const encima = ratonEncima && interactivo;
   useCursor(encima && !activa, edicion ? "move" : "pointer");
 
   const { color } = elemento;
@@ -107,20 +110,22 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
             : 0.22;
   useFundido(base, opacidadBase, true);
 
-  const eventos = {
-    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
-      e.stopPropagation();
-      setEncima(true);
-    },
-    onPointerOut: () => setEncima(false),
-    onClick: (e: ThreeEvent<MouseEvent>) => {
-      e.stopPropagation();
-      // En edición el clic selecciona (lo hace el arrastre); fuera, entra en la zona
-      if (edicion || e.delta > 6) return;
-      onElegir(elemento.clave);
-    },
-    ...(edicion ? arrastre.manejadores("mover") : {}),
-  };
+  const eventos = interactivo
+    ? {
+        onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          setEncima(true);
+        },
+        onPointerOut: () => setEncima(false),
+        onClick: (e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          // En edición el clic selecciona (lo hace el arrastre); fuera, entra en la zona
+          if (edicion || e.delta > 6) return;
+          onElegir(elemento.clave);
+        },
+        ...(edicion ? arrastre.manejadores("mover") : {}),
+      }
+    : {};
 
   const borde = useMemo(
     () => [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]].map(([x, y]) => punto3(x, y, 0.04)),

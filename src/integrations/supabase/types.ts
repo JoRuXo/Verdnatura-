@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       elementos_mapa: {
         Row: {
+          almacen: boolean
           categoria: string
           clave: string
           color: string
@@ -35,6 +36,7 @@ export type Database = {
           y1: number
         }
         Insert: {
+          almacen?: boolean
           categoria?: string
           clave: string
           color?: string
@@ -54,6 +56,7 @@ export type Database = {
           y1: number
         }
         Update: {
+          almacen?: boolean
           categoria?: string
           clave?: string
           color?: string

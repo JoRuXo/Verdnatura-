@@ -110,7 +110,7 @@ function MenuZonas({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="max-h-[70vh] w-60 overflow-y-auto">
-        {grupos.length === 0 && <div className="px-2 py-3 text-sm text-muted-foreground">Aún no hay zonas.</div>}
+        {grupos.length === 0 && <div className="px-2 py-3 text-sm text-muted-foreground">Aún no hay zonas donde guardar artículos.</div>}
         {grupos.map((g, i) => (
           <DropdownMenuGroup key={g.categoria}>
             {i > 0 && <DropdownMenuSeparator />}
@@ -198,7 +198,7 @@ const Nave = () => {
   const centroRef: RefCentro = useRef(null);
 
   const elementos = editor.activo ? editor.borrador : mapa.elementos;
-  const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId);
+  const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId && e.almacen);
 
   // Artículo buscado (/?articulo=...): sus zonas se señalan en el mapa con la cantidad
   const articuloFoco = !zonaId && !editor.activo ? listaArticulos.find((a) => a.id === params.get("articulo")) : undefined;
@@ -437,7 +437,8 @@ const Nave = () => {
             <Package className="h-4 w-4" />
           </BotonFlotante>
           <MenuZonas
-            elementos={elementos}
+            // Fuera de edición solo las zonas donde se guardan artículos; editando, todas
+            elementos={editor.activo ? elementos : elementos.filter((e) => e.almacen)}
             activa={editor.activo ? (editor.seleccion ?? undefined) : zona?.id}
             onElegir={(z) => (editor.activo ? editor.seleccionar(z.id) : elegirZona(z.clave))}
           />
@@ -546,6 +547,7 @@ const Nave = () => {
           onDuplicar={() => editor.anadir(duplicar(seleccionado))}
           onBorrar={() => pedirBorrado(seleccionado.id)}
           onCerrar={() => editor.seleccionar(null)}
+          articulosAqui={listaArticulos.filter((a) => a.existencias.some((x) => x.elementoId === seleccionado.id)).length}
         />
       )}
       {editor.activo && (

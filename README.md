@@ -25,11 +25,12 @@ Three.js con React Three Fiber, drei y camera-controls.
 | Archivo | Qué contiene |
 | --- | --- |
 | `plano.ts` | Medidas de la nave sacadas del PDF del plano: límite con las otras empresas, paredes, pilares, muelles M3–M8, oficinas, cámara frigorífica y la cuadrícula de referencia (vanos A–K, franjas 1–4). Solo se dibuja la parte de Verdnatura. |
-| `zonas.ts` | Las zonas del almacén (de momento solo la de ejemplo). |
+| `zonas.ts` | Las zonas reales sacadas del croquis (líneas de entrada, vuelta de vacíos, tumba, frío, plantas, CC tumbados, boxes, cubos, cartón, estantería) y los puestos (PC, charger, carro de bobinas). Las medidas se corrigen aquí. |
 | `EscenaNave.tsx` | El lienzo 3D, las luces y la cámara con sus vuelos entre vista general y zona. |
-| `Estructura.tsx` | Dibuja la nave: suelo, paredes cortadas, pilares, muelles, oficina, rótulos. |
-| `ZonaSuelo.tsx` | Una zona tocable y las estanterías de muestra. |
-| `piezas.tsx`, `geometria.ts` | Cajas instanciadas y utilidades para pasar del plano a la escena. |
+| `Estructura.tsx` | Dibuja la nave: suelo, paredes cortadas, pilares, muelles, oficinas, rótulos. |
+| `ZonaSuelo.tsx` | Cada zona según su tipo: líneas con flechas de flujo animadas, áreas y estanterías, con el nombre pintado en el suelo. |
+| `Puestos.tsx`, `estanterias.ts` | Modelos de los puestos y de las estanterías. |
+| `piezas.tsx`, `fundido.ts`, `geometria.ts` | Cajas instanciadas, fundido suave de opacidad y utilidades para pasar del plano a la escena. |
 
 La escala es provisional (1:300, unos 110 × 34 m) porque el plano no trae
 cotas: cuando haya una medida real basta con reescalar los números de

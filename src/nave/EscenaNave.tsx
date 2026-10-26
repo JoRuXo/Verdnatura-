@@ -5,6 +5,8 @@ import { CameraControls } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
 import { Estructura } from "./Estructura";
 import { ZonaSuelo } from "./ZonaSuelo";
+import { Puestos } from "./Puestos";
+import { esGamaLigera } from "./dispositivo";
 import { ZONAS, type Zona } from "./zonas";
 import { ALTURA_CORTE, NAVE, aEscena } from "./plano";
 import { PALETA_CLARA, PALETA_OSCURA } from "./paleta";
@@ -115,8 +117,9 @@ function Camara({ zona, vistaKey }: CamaraProps) {
         c,
         { aspecto, fraccionAncho: libreAncho / size.width, fraccionAlto: libreAlto / size.height },
         aEscena((x0 + x1) / 2, (y0 + y1) / 2),
-        x1 - x0,
-        y1 - y0,
+        // Las líneas son estrechas: se encuadra al menos un cuadro de 8 m para ver su entorno
+        Math.max(x1 - x0, 8),
+        Math.max(y1 - y0, 8),
         grados(46),
         // Al entrar se respeta hacia dónde estaba mirando la persona
         c.azimuthAngle,
@@ -159,22 +162,17 @@ function Camara({ zona, vistaKey }: CamaraProps) {
   );
 }
 
-/** Equipos táctiles pequeños: sin sombras y menos resolución, para que vaya fluido. */
-function esGamaLigera() {
-  if (typeof window === "undefined") return false;
-  const tactil = window.matchMedia("(pointer: coarse)").matches;
-  return tactil && Math.min(window.screen.width, window.screen.height) < 900;
-}
-
 export type EscenaNaveProps = {
   zona?: Zona;
   oscuro: boolean;
   referencias: boolean;
+  /** Flechas de las líneas en movimiento (pide fotogramas sin parar mientras está activo). */
+  flujos: boolean;
   vistaKey: number;
   onElegirZona: (id: string) => void;
 };
 
-export default function EscenaNave({ zona, oscuro, referencias, vistaKey, onElegirZona }: EscenaNaveProps) {
+export default function EscenaNave({ zona, oscuro, referencias, flujos, vistaKey, onElegirZona }: EscenaNaveProps) {
   const paleta = oscuro ? PALETA_OSCURA : PALETA_CLARA;
   const ligera = useMemo(esGamaLigera, []);
 
@@ -206,8 +204,17 @@ export default function EscenaNave({ zona, oscuro, referencias, vistaKey, onEleg
 
       <Estructura paleta={paleta} referencias={referencias} modoZona={!!zona} />
       {ZONAS.map((z) => (
-        <ZonaSuelo key={z.id} zona={z} activa={z.id === zona?.id} onElegir={onElegirZona} />
+        <ZonaSuelo
+          key={z.id}
+          zona={z}
+          activa={z.id === zona?.id}
+          atenuada={!!zona && z.id !== zona.id}
+          flujos={flujos}
+          contorno={paleta.suelo}
+          onElegir={onElegirZona}
+        />
       ))}
+      <Puestos oculta={!!zona} opacidad={zona ? 0.35 : 1} />
 
       <Camara zona={zona} vistaKey={vistaKey} />
     </Canvas>

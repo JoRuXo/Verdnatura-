@@ -41,6 +41,16 @@ export const FRANJAS = [
   { numero: 4, y0: 0, y1: 9.85 },
 ];
 
+/** Referencia de un rectángulo en el plano anotado: vanos y franjas que toca, p. ej. "J–K · 3–4". */
+export const referenciaDe = (r: Rect) => {
+  const vanos = VANOS.filter((v) => v.x1 > r.x0 + 0.01 && v.x0 < r.x1 - 0.01).map((v) => v.letra);
+  const franjas = FRANJAS.filter((f) => f.y1 > r.y0 + 0.01 && f.y0 < r.y1 - 0.01)
+    .map((f) => f.numero)
+    .sort((a, b) => a - b);
+  const rango = (xs: (string | number)[]) => (xs.length > 1 ? `${xs[0]}–${xs[xs.length - 1]}` : `${xs[0] ?? ""}`);
+  return `${rango(vanos)} · ${rango(franjas)}`;
+};
+
 /**
  * Límite con las otras empresas de la nave (línea roja discontinua), de la pared
  * izquierda a la pared de los muelles. Lo que queda por encima no es de Verdnatura.

@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      elementos_mapa: {
+        Row: {
+          categoria: string
+          clave: string
+          color: string
+          created_at: string
+          descripcion: string
+          id: string
+          modelo: string | null
+          muelle: string | null
+          nombre: string
+          orden: number
+          sentido: number | null
+          tipo: string
+          updated_at: string
+          x0: number
+          x1: number
+          y0: number
+          y1: number
+        }
+        Insert: {
+          categoria?: string
+          clave: string
+          color?: string
+          created_at?: string
+          descripcion?: string
+          id?: string
+          modelo?: string | null
+          muelle?: string | null
+          nombre: string
+          orden?: number
+          sentido?: number | null
+          tipo: string
+          updated_at?: string
+          x0: number
+          x1: number
+          y0: number
+          y1: number
+        }
+        Update: {
+          categoria?: string
+          clave?: string
+          color?: string
+          created_at?: string
+          descripcion?: string
+          id?: string
+          modelo?: string | null
+          muelle?: string | null
+          nombre?: string
+          orden?: number
+          sentido?: number | null
+          tipo?: string
+          updated_at?: string
+          x0?: number
+          x1?: number
+          y0?: number
+          y1?: number
+        }
+        Relationships: []
+      }
       articulos: {
         Row: {
           cajas: number

@@ -1,7 +1,9 @@
 import type { Rect } from "./plano";
-import { cajaPlano, type Caja } from "./geometria";
+import type { Caja } from "./geometria";
+import { marcoDe } from "./marco";
 
-// Piezas de las estanterías, a partir de la superficie de la zona (metros).
+// Piezas de las estanterías, a partir de la superficie del elemento (metros).
+// Se construyen en el marco local (u a lo largo, v a lo ancho).
 
 export type PiezasEstanteria = {
   montantes: Caja[];
@@ -12,10 +14,11 @@ export type PiezasEstanteria = {
 };
 
 /**
- * Rack de palets: vanos de 2,7 m a lo largo de x, dos filas espalda con espalda
- * a lo ancho y dos alturas de carga. Para el cartón, cargas planas apiladas.
+ * Rack de palets: vanos de 2,7 m a lo largo y, si cabe, dos filas espalda con
+ * espalda a lo ancho, con dos alturas de carga.
  */
-export function racksCarton(area: Rect): PiezasEstanteria {
+export function racksPalets(area: Rect): PiezasEstanteria {
+  const m = marcoDe(area);
   const VANO = 2.7;
   const FONDO = 1.1;
   const ALTO = 3.0;
@@ -27,31 +30,36 @@ export function racksCarton(area: Rect): PiezasEstanteria {
     cargas: [],
     colores: { montante: "#1d4ed8", larguero: "#f97316", palet: "#b7895a", carga: "#c9a27a" },
   };
-  const vanos = Math.max(1, Math.floor((area.x1 - area.x0 + 0.05) / VANO));
-  const inicio = (area.x0 + area.x1) / 2 - (vanos * VANO) / 2;
-  const filas = [area.y0 + 0.05, area.y0 + 0.05 + FONDO + 0.05];
+  const vanos = Math.max(1, Math.floor((m.largo + 0.05) / VANO));
+  const vano = Math.min(VANO, m.largo / vanos);
+  const inicio = m.largo / 2 - (vanos * vano) / 2;
+  const nFilas = Math.max(1, Math.min(2, Math.floor((m.ancho + 0.05) / (FONDO + 0.05))));
+  const fondo = Math.min(FONDO, m.ancho / nFilas - 0.05);
+  const filas = Array.from({ length: nFilas }, (_, f) => 0.03 + f * (fondo + 0.05));
+  const porVano = Math.max(1, Math.floor(vano / 0.85));
+  const anchoPalet = vano / porVano - 0.1;
 
-  filas.forEach((fy, f) => {
-    for (let v = 0; v <= vanos; v++) {
-      const x = inicio + v * VANO;
-      piezas.montantes.push(cajaPlano(x - 0.05, fy, x + 0.05, fy + 0.1, ALTO));
-      piezas.montantes.push(cajaPlano(x - 0.05, fy + FONDO - 0.1, x + 0.05, fy + FONDO, ALTO));
+  filas.forEach((fv, f) => {
+    for (let k = 0; k <= vanos; k++) {
+      const u = inicio + k * vano;
+      piezas.montantes.push(m.caja(u - 0.05, fv, u + 0.05, fv + 0.1, ALTO));
+      piezas.montantes.push(m.caja(u - 0.05, fv + fondo - 0.1, u + 0.05, fv + fondo, ALTO));
     }
-    for (let v = 0; v < vanos; v++) {
-      const xa = inicio + v * VANO;
+    for (let k = 0; k < vanos; k++) {
+      const ua = inicio + k * vano;
       NIVELES.forEach((nivel, n) => {
         if (nivel > 0) {
-          piezas.largueros.push(cajaPlano(xa, fy, xa + VANO, fy + 0.06, 0.12, nivel));
-          piezas.largueros.push(cajaPlano(xa, fy + FONDO - 0.06, xa + VANO, fy + FONDO, 0.12, nivel));
+          piezas.largueros.push(m.caja(ua, fv, ua + vano, fv + 0.06, 0.12, nivel));
+          piezas.largueros.push(m.caja(ua, fv + fondo - 0.06, ua + vano, fv + fondo, 0.12, nivel));
         }
-        for (let p = 0; p < 3; p++) {
+        for (let p = 0; p < porVano; p++) {
           // Patrón fijo de huecos vacíos para que no parezca todo lleno
-          if ((v * 7 + p * 3 + n * 5 + f * 2) % 7 === 0) continue;
-          const px = xa + 0.1 + p * 0.85;
+          if ((k * 7 + p * 3 + n * 5 + f * 2) % 7 === 0) continue;
+          const pu = ua + 0.1 + p * (anchoPalet + 0.05);
           const base = nivel + (nivel > 0 ? 0.12 : 0);
-          piezas.palets.push(cajaPlano(px, fy - 0.03, px + 0.8, fy + FONDO + 0.03, 0.14, base));
-          const alto = 0.55 + ((v + p + n) % 3) * 0.15;
-          piezas.cargas.push(cajaPlano(px + 0.02, fy + 0.02, px + 0.78, fy + FONDO - 0.02, alto, base + 0.14));
+          piezas.palets.push(m.caja(pu, fv - 0.03, pu + anchoPalet, fv + fondo + 0.03, 0.14, base));
+          const alto = 0.55 + ((k + p + n) % 3) * 0.15;
+          piezas.cargas.push(m.caja(pu + 0.02, fv + 0.02, pu + anchoPalet - 0.02, fv + fondo - 0.02, alto, base + 0.14));
         }
       });
     }
@@ -59,8 +67,9 @@ export function racksCarton(area: Rect): PiezasEstanteria {
   return piezas;
 }
 
-/** Estantería baja de baldas pegada a la pared, con cajas sueltas. */
-export function estanteriaPared(area: Rect): PiezasEstanteria {
+/** Estantería baja de baldas, con cajas sueltas. */
+export function estanteriaBaldas(area: Rect): PiezasEstanteria {
+  const m = marcoDe(area);
   const ALTO = 2.0;
   const BALDAS = [0.1, 0.6, 1.1, 1.6];
   const piezas: PiezasEstanteria = {
@@ -70,19 +79,20 @@ export function estanteriaPared(area: Rect): PiezasEstanteria {
     cargas: [],
     colores: { montante: "#64748b", larguero: "#94a3b8", palet: "#94a3b8", carga: "#d8c4a0" },
   };
-  const { x0, x1, y0, y1 } = area;
-  for (const x of [x0, (x0 + x1) / 2, x1]) {
-    piezas.montantes.push(cajaPlano(x - 0.03, y0, x + 0.03, y0 + 0.06, ALTO));
-    piezas.montantes.push(cajaPlano(x - 0.03, y1 - 0.06, x + 0.03, y1, ALTO));
+  const tramos = Math.max(1, Math.round(m.largo / 1.35));
+  for (let k = 0; k <= tramos; k++) {
+    const u = (m.largo * k) / tramos;
+    piezas.montantes.push(m.caja(u - 0.03, 0, u + 0.03, 0.06, ALTO));
+    piezas.montantes.push(m.caja(u - 0.03, m.ancho - 0.06, u + 0.03, m.ancho, ALTO));
   }
+  const cajasPorBalda = Math.max(1, Math.round(m.largo / 0.65));
+  const paso = m.largo / cajasPorBalda;
   BALDAS.forEach((b, n) => {
-    piezas.largueros.push(cajaPlano(x0, y0, x1, y1, 0.03, b));
-    // Cajas en cada balda, con algún hueco
-    for (let i = 0; i < 4; i++) {
+    piezas.largueros.push(m.caja(0, 0, m.largo, m.ancho, 0.03, b));
+    for (let i = 0; i < cajasPorBalda; i++) {
       if ((i + n * 3) % 5 === 0) continue;
-      const cx = x0 + 0.1 + i * ((x1 - x0 - 0.2) / 4);
       const alto = 0.2 + ((i + n) % 3) * 0.08;
-      piezas.cargas.push(cajaPlano(cx, y0 + 0.08, cx + (x1 - x0 - 0.4) / 4, y1 - 0.08, alto, b + 0.03));
+      piezas.cargas.push(m.caja(i * paso + 0.06, 0.08, (i + 1) * paso - 0.06, m.ancho - 0.08, alto, b + 0.03));
     }
   });
   return piezas;

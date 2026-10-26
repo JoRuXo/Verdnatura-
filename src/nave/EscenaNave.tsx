@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type MutableRefObject } from "react";
 import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import { CameraControls } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
 import { Estructura } from "./Estructura";
-import { ZonaSuelo } from "./ZonaSuelo";
-import { Puestos } from "./Puestos";
+import { ElementoMapa } from "./ElementoMapa";
 import { esGamaLigera } from "./dispositivo";
-import { ZONAS, type Zona } from "./zonas";
-import { ALTURA_CORTE, NAVE, aEscena } from "./plano";
+import type { Elemento } from "./elementos";
+import { ALTURA_CORTE, NAVE, aEscena, aPlano, type Rect } from "./plano";
 import { PALETA_CLARA, PALETA_OSCURA } from "./paleta";
 
 const FOV = 40;
@@ -63,9 +62,12 @@ function encuadrar(
   return distancia;
 }
 
-type CamaraProps = { zona?: Zona; vistaKey: number };
+/** Función que devuelve el punto del plano al que mira la cámara (para colocar cosas nuevas). */
+export type RefCentro = MutableRefObject<(() => [number, number]) | null>;
 
-function Camara({ zona, vistaKey }: CamaraProps) {
+type CamaraProps = { zona?: Elemento; vistaKey: number; centroRef?: RefCentro };
+
+function Camara({ zona, vistaKey, centroRef }: CamaraProps) {
   const ref = useRef<CameraControlsImpl>(null);
   const size = useThree((s) => s.size);
   const aspecto = size.width / size.height;
@@ -93,7 +95,13 @@ function Camara({ zona, vistaKey }: CamaraProps) {
         new THREE.Vector3(NAVE.ancho / 2 + 20, 30, NAVE.fondo / 2 + 15),
       ),
     );
-  }, []);
+    if (centroRef) {
+      centroRef.current = () => {
+        const t = c.getTarget(new THREE.Vector3());
+        return aPlano(t.x, t.z);
+      };
+    }
+  }, [centroRef]);
 
   useEffect(() => {
     const c = ref.current;
@@ -162,17 +170,39 @@ function Camara({ zona, vistaKey }: CamaraProps) {
   );
 }
 
+/** Lo que necesita la escena en modo edición. */
+export type EdicionEscena = {
+  seleccion: string | null;
+  rejilla: boolean;
+  onSeleccionar: (id: string | null) => void;
+  onEmpezarCambio: () => void;
+  onCambiarArea: (id: string, area: Rect) => void;
+};
+
 export type EscenaNaveProps = {
-  zona?: Zona;
+  elementos: Elemento[];
+  zona?: Elemento;
   oscuro: boolean;
   referencias: boolean;
   /** Flechas de las líneas en movimiento (pide fotogramas sin parar mientras está activo). */
   flujos: boolean;
   vistaKey: number;
-  onElegirZona: (id: string) => void;
+  onElegirZona: (clave: string) => void;
+  edicion: EdicionEscena | null;
+  centroRef?: RefCentro;
 };
 
-export default function EscenaNave({ zona, oscuro, referencias, flujos, vistaKey, onElegirZona }: EscenaNaveProps) {
+export default function EscenaNave({
+  elementos,
+  zona,
+  oscuro,
+  referencias,
+  flujos,
+  vistaKey,
+  onElegirZona,
+  edicion,
+  centroRef,
+}: EscenaNaveProps) {
   const paleta = oscuro ? PALETA_OSCURA : PALETA_CLARA;
   const ligera = useMemo(esGamaLigera, []);
 
@@ -184,6 +214,8 @@ export default function EscenaNave({ zona, oscuro, referencias, flujos, vistaKey
       camera={{ fov: FOV, near: 0.5, far: 1500, position: [0, 200, 60] }}
       gl={{ antialias: true }}
       className="touch-none"
+      // Un clic en el suelo vacío quita la selección
+      onPointerMissed={() => edicion?.onSeleccionar(null)}
     >
       <color attach="background" args={[paleta.fondo]} />
       <fog attach="fog" args={[paleta.fondo, 260, 700]} />
@@ -203,20 +235,28 @@ export default function EscenaNave({ zona, oscuro, referencias, flujos, vistaKey
       />
 
       <Estructura paleta={paleta} referencias={referencias} modoZona={!!zona} />
-      {ZONAS.map((z) => (
-        <ZonaSuelo
-          key={z.id}
-          zona={z}
-          activa={z.id === zona?.id}
-          atenuada={!!zona && z.id !== zona.id}
+      {elementos.map((e) => (
+        <ElementoMapa
+          key={e.id}
+          elemento={e}
+          activa={e.id === zona?.id}
+          atenuada={!!zona && e.id !== zona.id}
           flujos={flujos}
           contorno={paleta.suelo}
           onElegir={onElegirZona}
+          edicion={
+            edicion && {
+              seleccionado: edicion.seleccion === e.id,
+              rejilla: edicion.rejilla,
+              onSeleccionar: edicion.onSeleccionar,
+              onEmpezarCambio: edicion.onEmpezarCambio,
+              onCambiarArea: edicion.onCambiarArea,
+            }
+          }
         />
       ))}
-      <Puestos oculta={!!zona} opacidad={zona ? 0.35 : 1} />
 
-      <Camara zona={zona} vistaKey={vistaKey} />
+      <Camara zona={zona} vistaKey={vistaKey} centroRef={centroRef} />
     </Canvas>
   );
 }

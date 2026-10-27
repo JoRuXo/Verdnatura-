@@ -30,3 +30,6 @@ dist-ssr
 
 # Configuración local de Claude Code
 .claude/
+
+# Imágenes exportadas del modelo 3D
+capturas/

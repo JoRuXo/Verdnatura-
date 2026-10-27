@@ -15,8 +15,15 @@ const APARTADOS: Apartado[] = [
   { id: "historial", nombre: "Historial", icono: History, a: "/historial" },
 ];
 
-const apartadoDe = (ruta: string): Apartado["id"] =>
-  ruta.startsWith("/articulos") ? "articulos" : ruta.startsWith("/historial") ? "historial" : "mapa";
+// Páginas que no son un apartado de la barra (Usuarios, QR): ninguno marcado
+const apartadoDe = (ruta: string): Apartado["id"] | null =>
+  ruta.startsWith("/articulos")
+    ? "articulos"
+    : ruta.startsWith("/historial")
+      ? "historial"
+      : ruta === "/" || ruta.startsWith("/zona")
+        ? "mapa"
+        : null;
 
 /** Enlace de la barra en ordenador: como el menú de verdnatura.es, con raya lima debajo del apartado abierto. */
 function Enlace({ activo, icono: Icono, children, ...props }: { activo?: boolean; icono: LucideIcon; children: ReactNode } & (

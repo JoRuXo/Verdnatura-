@@ -5,6 +5,30 @@ Holanda. La pantalla principal es la nave en 3D: se recorre como un mapa y, al
 tocar una zona u objeto, la cámara vuela hasta ella y se ve qué hay guardado
 allí.
 
+## Acceso con usuario
+
+Solo entra quien tiene usuario: correo y contraseña de Supabase Auth, más un
+perfil (tabla `perfiles`) con su nombre, su rol y si tiene acceso. Sin haber
+entrado no se ve nada: ni el mapa, ni el stock, ni las fotos. No hay registro
+público; la contraseña olvidada la pone nueva un administrador.
+
+| Rol | Qué puede hacer |
+| --- | --- |
+| Administrador | Todo: editar el mapa, borrar artículos, gestionar usuarios y descargar la copia de seguridad. |
+| Equipo | Contar stock y crear o editar artículos. |
+
+Los administradores gestionan a la gente en **☰ → Usuarios**: añadir persona
+(con una contraseña provisional que se le pasa), cambiar nombre y rol, poner
+una contraseña nueva y quitar o devolver el acceso. A quien se le quita el
+acceso no se le borra: su nombre sigue en el historial. La base de datos no
+deja que se quede sin ningún administrador.
+
+Las altas, contraseñas y bajas pasan por la función `usuarios` de Supabase
+(`supabase/functions/usuarios`), que comprueba que quien llama es
+administrador y usa la clave de servicio, que nunca sale de Supabase. Los
+permisos de verdad están en la base de datos (políticas RLS con
+`es_usuario()` y `es_admin()`); la app solo esconde lo que no se puede usar.
+
 ## Catálogo de artículos
 
 En `/articulos` (botón de la caja en el mapa) está todo lo que tenemos: cada
@@ -53,11 +77,9 @@ que está por debajo del mínimo.
 
 ## Historial y varias personas a la vez
 
-La primera vez que se abre la app en un dispositivo pide un nombre (no es una
-contraseña; se cambia desde el menú). Cada petición a Supabase lo lleva en la
-cabecera `x-autor` y unos disparadores de la base de datos apuntan en la tabla
-`historial` todo lo que cambia: cantidades, artículos y mapa, con quién y
-cuándo. Se ve en `/historial` (con filtros por persona, tipo, artículo y zona)
+Unos disparadores de la base de datos apuntan en la tabla `historial` todo lo
+que cambia (cantidades, artículos y mapa), con el nombre del perfil de quien lo
+hizo y cuándo. Se ve en `/historial` (con filtros por persona, tipo, artículo y zona)
 y en la ficha de cada artículo.
 
 Para que varias personas no se pisen:
@@ -83,11 +105,16 @@ Se genera en el propio navegador (`src/exportar`), con fotos o sin ellas.
 ## Siempre encendida y copias de seguridad
 
 `api/mantenimiento.js` es una función de Vercel que el cron de `vercel.json`
-lanza cada noche (03:17 UTC). Lee la base de datos, así el proyecto gratuito de
-Supabase no se pausa por falta de uso, y guarda una copia de todo (mapa,
-artículos, existencias e historial) en el bucket privado `copias`, un JSON por
-día. Desde la app solo se puede subir a ese bucket, no leer ni borrar; las
-copias se descargan desde el panel de Supabase (Storage → copias).
+lanza cada día. Llama al `latido()` de la base de datos, que no devuelve
+ningún dato, para que el proyecto gratuito de Supabase no se pause por falta de
+uso.
+
+La copia de seguridad la hace la propia base de datos cada noche a las 03:17
+UTC (pg_cron → `hacer_copia()`): todo (mapa, artículos, existencias,
+historial y usuarios) en la tabla `copias_seguridad`, una por día, y se
+guardan los últimos 30 días. Los administradores descargan la última desde
+**☰ → Descargar copia de seguridad**. Las copias antiguas en JSON siguen en el
+bucket `copias` (Storage).
 
 ## App en el móvil
 
@@ -102,7 +129,8 @@ inicio». El tema (claro, oscuro o el del dispositivo) se elige en el menú.
   poniendo `codigosQR: true` en `src/funciones.ts`.
 
 Las fotos se reducen en el navegador (lado mayor 1600 px, JPEG) antes de
-subirlas al bucket `fotos-articulos` de Supabase. Las que se suben y luego se
+subirlas al bucket privado `fotos-articulos` de Supabase; para verlas, la app
+pide enlaces firmados que valen una semana. Las que se suben y luego se
 cancelan, o se quitan de un artículo, se borran del almacén.
 
 ## Editar el mapa
@@ -152,7 +180,15 @@ Three.js con React Three Fiber, drei y camera-controls.
 1. `npm install`
 2. Copiar `.env.example` a `.env.local` y rellenar los datos del proyecto de Supabase.
 3. Aplicar las migraciones de `supabase/migrations` en orden (SQL Editor de Supabase o `supabase db push`).
-4. `npm run dev` → http://localhost:8080 (en PowerShell, `npm.cmd run dev`).
+4. Desplegar la función `supabase/functions/usuarios` (Edge Functions → Deploy
+   a new function → Via Editor, con el nombre `usuarios`) y apagar en sus
+   ajustes «Verify JWT with legacy secret».
+5. Primer administrador: crearlo en Authentication → Users → Add user → Create
+   new user (con «Auto confirm user») y darle perfil en el SQL Editor:
+   `insert into public.perfiles (id, nombre, email, rol) select id, 'Nombre', email, 'admin' from auth.users where email = 'su@correo';`
+   Los demás se añaden desde la app. En Authentication → Sign In / Providers
+   conviene apagar «Allow new users to sign up».
+6. `npm run dev` → http://localhost:8080 (en PowerShell, `npm.cmd run dev`).
 
 ## Cómo está organizado el 3D (`src/nave`)
 
@@ -195,13 +231,16 @@ elemento del mapa; si se borra la zona, la existencia queda «sin ubicar»).
 | `src/buscador` | Buscador del mapa y los vistos hace poco. |
 | `src/historial` | Lectura del historial, cómo se cuenta cada cambio y su lista. |
 | `src/exportar` | Datos del informe, Excel (ExcelJS), PDF (jsPDF) y el diálogo. |
-| `src/lib/autor.ts`, `src/components/DialogoAutor.tsx` | Nombre de quien usa la app y el diálogo para ponerlo. |
+| `src/auth` | Sesión y perfil de quien ha entrado, pantalla de entrada y cambiar la contraseña propia. |
+| `src/usuarios`, `src/pages/Usuarios.tsx` | Gestión de usuarios (solo administradores). |
+| `supabase/functions/usuarios` | Función de Supabase para altas, contraseñas y acceso. |
+| `src/lib/copia.ts` | Descargar la última copia de seguridad. |
 | `src/lib/tiempoReal.ts` | Escucha los cambios de los demás y refresca. |
 | `src/lib/texto.ts` | Búsqueda sin tildes y con puntuación. |
 | `src/components/BarraSuperior.tsx` | Barra de arriba, igual en todas las páginas: Mapa, Artículos, Historial, Exportar y «Nuevo artículo» (en el móvil, en una fila de pestañas). |
-| `src/components/MenuGeneral.tsx` | Menú ☰: nombre, tema, instalar la app y el estado del tiempo real. |
+| `src/components/MenuGeneral.tsx` | Menú ☰: tu cuenta (contraseña, salir; usuarios y copia para administradores), tema, instalar la app y el estado del tiempo real. |
 | `src/funciones.ts` | Funciones hechas pero apagadas. |
-| `api/mantenimiento.js` | Tarea nocturna: mantener Supabase activo y copia de seguridad. |
+| `api/mantenimiento.js` | Tarea diaria: el latido que mantiene Supabase activo. |
 
 ## Variables de entorno
 

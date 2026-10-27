@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Download, Menu, Monitor, Moon, QrCode, Sun, UserRound } from "lucide-react";
+import { DatabaseBackup, Download, KeyRound, LogOut, Menu, Monitor, Moon, QrCode, Sun, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,20 +15,37 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { abrirCambioNombre, useAutor } from "@/lib/autor";
+import { useSesion, usePerfil } from "@/auth/sesion";
+import { DialogoContrasena } from "@/auth/DialogoContrasena";
+import { ROLES } from "@/usuarios/useUsuarios";
+import { descargarCopia } from "@/lib/copia";
 import { useInstalacion } from "@/lib/instalar";
 import { useConexionTiempoReal } from "@/lib/tiempoReal";
 import { FUNCIONES } from "@/funciones";
 
 /**
- * Menú de la cabecera con lo que no tiene botón propio: exportar, historial,
- * tema (claro / oscuro), nombre de quien usa la app e instalarla en el móvil.
+ * Menú de la cabecera con lo que no tiene botón propio: la cuenta de quien ha
+ * entrado (contraseña, salir y, para administradores, usuarios y copia de
+ * seguridad), tema (claro / oscuro) e instalarla en el móvil.
  * `children`: opciones propias de la página (p. ej. las del mapa en el móvil).
  */
 export function MenuGeneral({ children, className }: { children?: ReactNode; className?: string }) {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const autor = useAutor();
+  const perfil = usePerfil();
+  const { salir } = useSesion();
+  const esAdmin = perfil.rol === "admin";
+  const [cambiandoContrasena, setCambiandoContrasena] = useState(false);
+
+  const copia = async () => {
+    try {
+      const fecha = await descargarCopia();
+      if (fecha) toast.success(`Copia del ${new Date(`${fecha}T12:00:00`).toLocaleDateString("es-ES")} descargada`);
+      else toast.info("Todavía no hay ninguna copia", { description: "Se hace sola cada noche." });
+    } catch {
+      toast.error("No se ha podido descargar la copia. Vuelve a probar en un momento.");
+    }
+  };
   const conexion = useConexionTiempoReal();
   const instalacion = useInstalacion();
 
@@ -57,14 +74,25 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="max-h-[80vh] w-64 overflow-y-auto">
-          <DropdownMenuItem onSelect={() => abrirCambioNombre()} className="gap-2">
-            <UserRound className="h-4 w-4" />
-            <span className="min-w-0 flex-1 truncate">
-              <span className="text-muted-foreground">Eres </span>
-              <span className="font-semibold">{autor || "—"}</span>
-            </span>
-            <span className="text-xs text-muted-foreground">Cambiar</span>
+          <div className="px-2 py-1.5">
+            <p className="truncate text-sm font-semibold">{perfil.nombre}</p>
+            <p className="truncate text-xs text-muted-foreground">{perfil.email}</p>
+            <p className="mt-1 inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold">{ROLES[perfil.rol].nombre}</p>
+          </div>
+          <DropdownMenuItem onSelect={() => setCambiandoContrasena(true)} className="gap-2">
+            <KeyRound className="h-4 w-4" /> Cambiar mi contraseña
           </DropdownMenuItem>
+          {esAdmin && (
+            <>
+              <DropdownMenuItem onSelect={() => navigate("/usuarios")} className="gap-2">
+                <UsersRound className="h-4 w-4" /> Usuarios
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void copia()} className="gap-2">
+                <DatabaseBackup className="h-4 w-4" /> Descargar copia de seguridad
+              </DropdownMenuItem>
+            </>
+          )}
+          <DropdownMenuSeparator />
 
           {children}
 
@@ -108,8 +136,14 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
                 ? "Conectando…"
                 : "Sin conexión en tiempo real: se actualiza al volver"}
           </div>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => void salir()} className="gap-2">
+            <LogOut className="h-4 w-4" /> Salir
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <DialogoContrasena abierto={cambiandoContrasena} onCerrar={() => setCambiandoContrasena(false)} />
     </>
   );
 }

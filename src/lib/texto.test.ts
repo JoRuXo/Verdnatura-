@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { normalizar, puntuar } from "./texto";
-import { codificarAutor } from "./autor";
 
 describe("buscar sin importar tildes ni mayúsculas", () => {
   it("normaliza", () => {
@@ -25,13 +24,5 @@ describe("buscar sin importar tildes ni mayúsculas", () => {
     expect(exacto).toBeGreaterThan(empieza);
     expect(empieza).toBeGreaterThan(dentro);
     expect(dentro).toBeGreaterThan(soloEnDatos);
-  });
-});
-
-describe("nombre de quien hace el cambio", () => {
-  it("viaja en base64 con sus tildes intactas", () => {
-    const codificado = codificarAutor("José Ñúñez");
-    const bytes = Uint8Array.from(atob(codificado), (c) => c.charCodeAt(0));
-    expect(new TextDecoder().decode(bytes)).toBe("José Ñúñez");
   });
 });

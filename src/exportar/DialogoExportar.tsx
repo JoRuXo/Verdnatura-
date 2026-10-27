@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useAutor } from "@/lib/autor";
+import { usePerfil } from "@/auth/sesion";
 import { useArticulos } from "@/articulos/useArticulos";
 import { useMapa } from "@/nave/useMapa";
 import { nombreFichero, prepararInforme } from "./informe";
@@ -34,7 +34,7 @@ const FORMATOS: Record<Formato, { nombre: string; texto: string; icono: typeof F
 export function DialogoExportar({ abierto, onCerrar }: { abierto: boolean; onCerrar: () => void }) {
   const articulos = useArticulos();
   const mapa = useMapa();
-  const autor = useAutor();
+  const autor = usePerfil().nombre;
   const [formato, setFormato] = useState<Formato>("excel");
   const [conFotos, setConFotos] = useState(true);
   const [progreso, setProgreso] = useState<string | null>(null);

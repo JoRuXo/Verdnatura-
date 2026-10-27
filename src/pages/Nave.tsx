@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { BarraSuperior } from "@/components/BarraSuperior";
+import { useEsAdmin } from "@/auth/sesion";
 import { esGamaLigera } from "@/nave/dispositivo";
 import { agruparPorCategoria, duplicar, nuevoElemento, type Elemento } from "@/nave/elementos";
 import type { Rect } from "@/nave/plano";
@@ -222,6 +223,8 @@ const Nave = () => {
   const navigate = useNavigate();
   const { resolvedTheme } = useTheme();
   const mapa = useMapa();
+  // Editar el mapa es cosa de administradores
+  const esAdmin = useEsAdmin();
   const editor = useEditor(mapa.elementos);
   const articulos = useArticulos();
   const listaArticulos = useMemo(() => articulos.data ?? [], [articulos.data]);
@@ -509,14 +512,16 @@ const Nave = () => {
             activa={editor.activo ? (editor.seleccion ?? undefined) : zona?.id}
             onElegir={(z) => (editor.activo ? editor.seleccionar(z.id) : elegirZona(z.clave))}
           />
-          <BotonFlotante
-            titulo={mapa.guardable ? "Editar mapa" : "No se puede editar: sin conexión con la base de datos"}
-            activo={editor.activo}
-            disabled={!mapa.guardable && !editor.activo}
-            onClick={() => (editor.activo ? terminarEdicion() : empezarEdicion())}
-          >
-            <Pencil className="h-4 w-4" />
-          </BotonFlotante>
+          {esAdmin && (
+            <BotonFlotante
+              titulo={mapa.guardable ? "Editar mapa" : "No se puede editar: sin conexión con la base de datos"}
+              activo={editor.activo}
+              disabled={!mapa.guardable && !editor.activo}
+              onClick={() => (editor.activo ? terminarEdicion() : empezarEdicion())}
+            >
+              <Pencil className="h-4 w-4" />
+            </BotonFlotante>
+          )}
           <BotonFlotante titulo="Vista general" onClick={vistaGeneral}>
             <Maximize className="h-4 w-4" />
           </BotonFlotante>

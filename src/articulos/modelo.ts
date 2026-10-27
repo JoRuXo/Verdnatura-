@@ -73,7 +73,25 @@ export const ESTADOS: Record<Estado, { nombre: string; clase: string }> = {
   "sin-stock": { nombre: "Sin stock", clase: "bg-muted text-muted-foreground" },
 };
 
-export const urlFoto = (ruta: string) => supabase.storage.from(BUCKET_FOTOS).getPublicUrl(ruta).data.publicUrl;
+// Las fotos están en un almacén privado: solo las ve quien ha entrado. La app
+// pide enlaces firmados (valen una semana) y los guarda aquí para pintarlas.
+const SEMANA = 7 * 24 * 3600;
+const UN_DIA_MS = 24 * 3600 * 1000;
+const firmadas = new Map<string, { url: string; hasta: number }>();
+
+/** Enlace para ver una foto ("" si aún no se ha pedido: ver `firmarFotos`). */
+export const urlFoto = (ruta: string) => firmadas.get(ruta)?.url ?? "";
+
+/** Pide los enlaces de las fotos que aún no lo tienen (o les queda menos de un día). */
+export async function firmarFotos(rutas: string[]) {
+  const ahora = Date.now();
+  const faltan = [...new Set(rutas)].filter((r) => (firmadas.get(r)?.hasta ?? 0) < ahora + UN_DIA_MS);
+  for (let i = 0; i < faltan.length; i += 100) {
+    const { data, error } = await supabase.storage.from(BUCKET_FOTOS).createSignedUrls(faltan.slice(i, i + 100), SEMANA);
+    if (error) throw error;
+    for (const d of data) if (d.path && d.signedUrl) firmadas.set(d.path, { url: d.signedUrl, hasta: ahora + SEMANA * 1000 });
+  }
+}
 
 const comoCaracteristicas = (j: Json): Caracteristica[] =>
   Array.isArray(j)

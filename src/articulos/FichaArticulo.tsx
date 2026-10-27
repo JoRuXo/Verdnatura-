@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useEsAdmin } from "@/auth/sesion";
 import type { Elemento } from "@/nave/elementos";
 import { ListaHistorial } from "@/historial/ListaHistorial";
 import { useHistorial } from "@/historial/useHistorial";
@@ -87,6 +88,7 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
   const [subiendo, setSubiendo] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(false);
+  const esAdmin = useEsAdmin();
   // Fotos subidas en esta edición: si se cancela, se borran para no dejar basura
   const subidas = useRef<string[]>([]);
   const archivos = useRef<HTMLInputElement>(null);
@@ -536,7 +538,8 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
         </div>
 
         <div className="flex items-center gap-2 border-t px-5 py-3">
-          {!esNuevo && (
+          {/* Borrar artículos es cosa de administradores */}
+          {!esNuevo && esAdmin && (
             <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={() => setConfirmarBorrado(true)}>
               <Trash2 className="h-4 w-4" /> Borrar
             </Button>

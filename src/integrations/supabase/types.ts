@@ -215,6 +215,51 @@ export type Database = {
         }
         Relationships: []
       }
+      perfiles: {
+        Row: {
+          activo: boolean
+          creado: string
+          email: string
+          id: string
+          nombre: string
+          rol: string
+        }
+        Insert: {
+          activo?: boolean
+          creado?: string
+          email?: string
+          id: string
+          nombre: string
+          rol?: string
+        }
+        Update: {
+          activo?: boolean
+          creado?: string
+          email?: string
+          id?: string
+          nombre?: string
+          rol?: string
+        }
+        Relationships: []
+      }
+      copias_seguridad: {
+        Row: {
+          creada: string
+          datos: Json
+          fecha: string
+        }
+        Insert: {
+          creada?: string
+          datos: Json
+          fecha?: string
+        }
+        Update: {
+          creada?: string
+          datos?: Json
+          fecha?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -224,6 +269,9 @@ export type Database = {
         Args: { p_delta: number; p_id: string }
         Returns: number
       }
+      es_admin: { Args: never; Returns: boolean }
+      es_usuario: { Args: never; Returns: boolean }
+      latido: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never

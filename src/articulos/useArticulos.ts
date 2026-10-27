@@ -2,14 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { comprimirImagen } from "./imagen";
-import { BUCKET_FOTOS, deFila, type Articulo, type Existencia } from "./modelo";
+import { BUCKET_FOTOS, deFila, firmarFotos, type Articulo, type Existencia } from "./modelo";
 
 export const CLAVE_ARTICULOS = ["articulos"] as const;
+
+/** Los enlaces de las fotos se piden antes de pintar; si falla, se ven los artículos sin foto. */
+const conFotos = async (lista: Articulo[]) => {
+  await firmarFotos(lista.flatMap((a) => a.fotos)).catch((e) => console.warn("No se han podido pedir las fotos", e));
+  return lista;
+};
 
 const leerArticulos = async () => {
   const { data, error } = await supabase.from("articulos").select("*, existencias(*)").order("nombre");
   if (error) throw error;
-  return data.map(deFila);
+  return conFotos(data.map(deFila));
 };
 
 /** Todos los artículos con sus existencias, por nombre. */
@@ -21,7 +27,7 @@ export function useArticulos() {
 export async function leerArticulo(id: string) {
   const { data, error } = await supabase.from("articulos").select("*, existencias(*)").eq("id", id).maybeSingle();
   if (error) throw error;
-  return data ? deFila(data) : null;
+  return data ? (await conFotos([deFila(data)]))[0] : null;
 }
 
 /** Alguien ha cambiado lo mismo mientras se editaba: no se guarda nada. */
@@ -188,6 +194,7 @@ export async function subirFoto(articuloId: string, archivo: File) {
     cacheControl: "31536000",
   });
   if (error) throw error;
+  await firmarFotos([ruta]);
   return ruta;
 }
 

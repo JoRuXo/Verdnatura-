@@ -116,7 +116,7 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
       key={e.id}
       className={cn(
         "absolute z-20 flex flex-col rounded-xl border bg-card/95 shadow-xl backdrop-blur",
-        "inset-x-3 bottom-24 max-h-[55dvh] sm:inset-x-auto sm:bottom-24 sm:right-4 sm:top-20 sm:max-h-none sm:w-80",
+        "inset-x-3 bottom-24 max-h-[55dvh] sm:inset-x-auto sm:bottom-24 sm:right-4 sm:top-32 sm:max-h-none sm:w-80",
         "animate-in fade-in slide-in-from-bottom-6 duration-500 sm:slide-in-from-bottom-0 sm:slide-in-from-right-6",
       )}
     >
@@ -204,6 +204,20 @@ export function PanelEdicion({ elemento: e, categorias, onCambiar, onRegistrar, 
             )}
           </span>
           <Switch checked={e.almacen} onCheckedChange={(v) => onCambiar({ almacen: v })} aria-label="Se guardan artículos aquí" />
+        </label>
+
+        <label className="flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-2.5">
+          <span className="space-y-0.5">
+            <span className="block text-sm font-medium">Mostrar el nombre en el mapa</span>
+            <span className="block text-xs text-muted-foreground">
+              {e.mostrarNombre
+                ? "El nombre se ve siempre sobre el mapa."
+                : e.almacen
+                  ? "Mapa más limpio: el nombre sale al pasar por encima y en «Zonas»."
+                  : "Mapa más limpio: el nombre solo se ve al editar el mapa."}
+            </span>
+          </span>
+          <Switch checked={e.mostrarNombre} onCheckedChange={(v) => onCambiar({ mostrarNombre: v })} aria-label="Mostrar el nombre en el mapa" />
         </label>
 
         <Campo etiqueta="Categoría (agrupa en el menú Zonas)">

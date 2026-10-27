@@ -27,6 +27,8 @@ export type Elemento = {
   descripcion: string;
   /** Se guardan artículos aquí: solo en estos se entra desde el mapa y se apunta stock. */
   almacen: boolean;
+  /** Se pinta su nombre en el mapa (apagado, solo sale al pasar por encima y en «Zonas»). */
+  mostrarNombre: boolean;
   orden: number;
 };
 
@@ -112,6 +114,7 @@ const normalizar = (f: FilaInicial | Tables<"elementos_mapa">, id: string, orden
   modelo: f.modelo,
   descripcion: f.descripcion,
   almacen: "almacen" in f && typeof f.almacen === "boolean" ? f.almacen : almacenDeSerie(f.tipo, f.modelo),
+  mostrarNombre: "mostrar_nombre" in f && typeof f.mostrar_nombre === "boolean" ? f.mostrar_nombre : f.modelo !== "cargador",
   orden,
 });
 
@@ -136,6 +139,7 @@ export const aFila = (e: Elemento, orden: number): TablesInsert<"elementos_mapa"
   modelo: e.modelo,
   descripcion: e.descripcion,
   almacen: e.almacen,
+  mostrar_nombre: e.mostrarNombre,
   orden,
 });
 
@@ -203,6 +207,7 @@ export function nuevoElemento(tipo: TipoElemento, modelo: string | null, x: numb
     modelo,
     descripcion: "",
     almacen: almacenDeSerie(tipo, modelo),
+    mostrarNombre: true,
     orden: 9999,
   };
 }

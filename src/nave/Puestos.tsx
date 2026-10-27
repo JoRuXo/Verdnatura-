@@ -4,6 +4,7 @@ import { Instancias } from "./piezas";
 import { Etiqueta } from "./Estructura";
 import { marcoDe } from "./marco";
 import type { Elemento } from "./elementos";
+import { piezasCarrosDeAdorno } from "./contenido";
 
 type Grupo = { color: string; cajas: Caja[] };
 
@@ -43,32 +44,9 @@ function piezasDe(e: Elemento): Grupo[] {
         { color: "#64748b", cajas: tomas },
       ];
     }
-    case "carros-cc": {
-      // Carros daneses (CC) en filas: base, cuatro postes y tres baldas
-      const filas = Math.max(1, Math.floor((W + 0.05) / 1.4));
-      const porFila = Math.max(1, Math.floor((L + 0.05) / 0.62));
-      const bases: Caja[] = [];
-      const postes: Caja[] = [];
-      const baldas: Caja[] = [];
-      for (let f = 0; f < filas; f++) {
-        const v0 = f * 1.4 + (W - filas * 1.4) / 2 + 0.03;
-        const v1 = v0 + 1.34;
-        for (let i = 0; i < porFila; i++) {
-          const u0 = i * 0.62 + (L - porFila * 0.62) / 2 + 0.03;
-          const u1 = u0 + 0.56;
-          bases.push(m.caja(u0, v0, u1, v1, 0.14, 0.06));
-          for (const [pu, pv] of [[u0, v0], [u1 - 0.03, v0], [u0, v1 - 0.03], [u1 - 0.03, v1 - 0.03]] as const) {
-            postes.push(m.caja(pu, pv, pu + 0.03, pv + 0.03, 1.9));
-          }
-          for (const h of [0.75, 1.2, 1.65]) baldas.push(m.caja(u0 + 0.02, v0 + 0.02, u1 - 0.02, v1 - 0.02, 0.02, h));
-        }
-      }
-      return [
-        { color: "#1e3a8a", cajas: bases },
-        { color: "#94a3b8", cajas: postes },
-        { color: "#cbd5e1", cajas: baldas },
-      ];
-    }
+    case "carros-cc":
+      // Carros CC montados y vacíos (lo apuntado en la zona se dibuja aparte)
+      return piezasCarrosDeAdorno(e.area);
     case "carro-bobinas": {
       const n = Math.max(1, Math.round(L / 0.4));
       const paso = (L - 0.1) / n;
@@ -92,11 +70,18 @@ function piezasDe(e: Elemento): Grupo[] {
   }
 }
 
-type Props = { elemento: Elemento; opacidad: number; oculta: boolean };
+type Props = {
+  elemento: Elemento;
+  opacidad: number;
+  /** Rótulo con el nombre escondido. */
+  oculta: boolean;
+  /** No dibujar las piezas de adorno: ya se dibuja lo que hay guardado. */
+  sinPiezas?: boolean;
+};
 
 /** Un objeto del mapa (PC, cargador, carros...): se dibuja con piezas y lleva su rótulo fijo. */
-export function PiezasPuesto({ elemento, opacidad, oculta }: Props) {
-  const grupos = useMemo(() => piezasDe(elemento), [elemento]);
+export function PiezasPuesto({ elemento, opacidad, oculta, sinPiezas = false }: Props) {
+  const grupos = useMemo(() => (sinPiezas ? [] : piezasDe(elemento)), [elemento, sinPiezas]);
   const { x0, y0, x1, y1 } = elemento.area;
   const alto = elemento.modelo === "cargador" || elemento.modelo === "carros-cc" ? 2.3 : 1.5;
   return (

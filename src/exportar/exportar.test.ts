@@ -24,6 +24,7 @@ const articulo = (a: Partial<Articulo> & Pick<Articulo, "id" | "nombre">): Artic
   caracteristicas: [],
   fotos: [],
   stockMinimo: null,
+  aspecto: null,
   existencias: [],
   ...a,
 });

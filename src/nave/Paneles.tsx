@@ -24,7 +24,7 @@ function PanelLateral({ id, children }: { id: string; children: ReactNode }) {
       key={id}
       className={cn(
         "absolute z-20 overflow-y-auto rounded-xl border bg-card/95 p-4 shadow-xl backdrop-blur",
-        "inset-x-3 bottom-3 max-h-[60dvh] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-20 sm:max-h-[calc(100dvh-6rem)] sm:w-[22rem]",
+        "inset-x-3 bottom-3 max-h-[60dvh] sm:inset-x-auto sm:bottom-auto sm:right-4 sm:top-32 sm:max-h-[calc(100dvh-9rem)] sm:w-[22rem]",
         "animate-in fade-in slide-in-from-bottom-6 duration-700 sm:slide-in-from-bottom-0 sm:slide-in-from-right-6",
       )}
     >

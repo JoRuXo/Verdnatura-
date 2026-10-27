@@ -11,6 +11,9 @@ import { useFundido } from "./fundido";
 import { estanteriaBaldas, racksPalets } from "./estanterias";
 import { marcoDe, type Marco } from "./marco";
 import { PiezasPuesto } from "./Puestos";
+import { piezasContenido } from "./contenido";
+import { Bocadillo, ContenidoElemento, type ArticuloEnZona } from "./DibujoContenido";
+import type { Aspecto } from "@/articulos/aspectos";
 import type { Elemento } from "./elementos";
 
 /** Separación entre flechas y velocidad del flujo (metros, metros por segundo). */
@@ -75,9 +78,13 @@ type Props = {
   edicion: Edicion | null;
   /** Rótulo fijo encima (p. ej. la cantidad de un artículo buscado). */
   marca?: string;
+  /** Lo que hay guardado aquí: se dibuja como es (si tiene aspecto) y sale en el bocadillo. */
+  contenido?: (ArticuloEnZona & { aspecto: Aspecto | null })[];
+  /** Enseñar el bocadillo con las fotos de lo que hay. */
+  bocadillo?: boolean;
 };
 
-export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion, marca }: Props) {
+export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onElegir, edicion, marca, contenido, bocadillo }: Props) {
   const [ratonEncima, setEncima] = useState(false);
   const esObjeto = elemento.tipo === "puesto";
   // Las líneas de flujo (y lo que no guarda artículos) solo se tocan en edición
@@ -90,6 +97,29 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
   const m = useMemo(() => marcoDe(elemento.area), [elemento.area]);
   const [cx, cz] = aEscena((x0 + x1) / 2, (y0 + y1) / 2);
   const arrastre = useArrastre(elemento, edicion);
+
+  // Lo guardado aquí que tiene dibujo, como es de verdad
+  const conDibujo = (contenido ?? []).filter((a) => a.aspecto && a.cantidad > 0);
+  const firmaContenido = conDibujo.map((a) => `${a.aspecto}:${a.cantidad}`).join("|");
+  const dibujo = useMemo(
+    () =>
+      firmaContenido
+        ? piezasContenido(
+            elemento.area,
+            conDibujo.map((a) => ({ aspecto: a.aspecto as Aspecto, cantidad: a.cantidad })),
+          )
+        : null,
+    // conDibujo se resume en firmaContenido
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [elemento.area, firmaContenido],
+  );
+  const conBocadillo = !!bocadillo && !edicion && !atenuada && !activa && !marca && (contenido?.length ?? 0) > 0;
+  // El nombre se ve si se ha dejado así; editando, siempre (para saber qué es cada cosa)
+  const nombreVisible = elemento.mostrarNombre || !!edicion;
+  const alturaBocadillo = Math.max(
+    dibujo?.altura ?? 0,
+    esObjeto ? 2.3 : elemento.tipo === "estanteria" && !dibujo?.conMueble ? (elemento.modelo === "pared" ? 2.1 : 3.1) : 0.2,
+  ) + 0.35;
 
   const base = useRef<THREE.MeshBasicMaterial>(null);
   // Los objetos ya se ven por sus piezas: el suelo solo marca la selección o el ratón encima
@@ -157,16 +187,36 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
       {(elemento.tipo === "area" || elemento.tipo === "estanteria") && (
         <Line points={borde} color={color} lineWidth={activa || encima ? 2.5 : 1.5} transparent opacity={atenuada ? 0.25 : 1} />
       )}
-      {elemento.tipo === "estanteria" && <EstanteriaElemento elemento={elemento} opacidad={atenuada ? 0.3 : 1} />}
-      {/* Con marca, su rótulo ya lleva el nombre: el fijo del objeto sobra */}
-      {esObjeto && <PiezasPuesto elemento={elemento} opacidad={atenuada ? 0.35 : 1} oculta={atenuada || !!marca} />}
+      {/* Si lo guardado trae su mueble (el armario de etiquetas), ese es la estantería */}
+      {elemento.tipo === "estanteria" && !dibujo?.conMueble && (
+        <EstanteriaElemento elemento={elemento} opacidad={atenuada ? 0.3 : 1} vacia={!!dibujo} />
+      )}
+      {/* Con marca o bocadillo, ya se ve el nombre: el rótulo fijo del objeto sobra */}
+      {esObjeto && (
+        <PiezasPuesto
+          elemento={elemento}
+          opacidad={atenuada ? 0.35 : 1}
+          oculta={atenuada || !!marca || conBocadillo || !nombreVisible}
+          sinPiezas={!!dibujo}
+        />
+      )}
+      {dibujo && <ContenidoElemento piezas={dibujo.piezas} opacidad={atenuada ? 0.3 : 1} />}
 
-      {!esObjeto && (
+      {!esObjeto && nombreVisible && (
         <NombreSuelo elemento={elemento} m={m} contorno={contorno} atenuado={atenuada} eventos={eventos} />
       )}
 
-      {/* De lejos el nombre del suelo no se lee: al pasar por encima sale un rótulo (los objetos ya llevan el suyo) */}
-      {encima && !activa && !esObjeto && (
+      {conBocadillo && (
+        <Bocadillo
+          posicion={[cx, alturaBocadillo, cz]}
+          nombre={elemento.mostrarNombre && esObjeto ? elemento.nombre : null}
+          articulos={contenido ?? []}
+          onAbrir={() => onElegir(elemento.clave)}
+        />
+      )}
+
+      {/* De lejos el nombre del suelo no se lee: al pasar por encima sale un rótulo (los objetos ya llevan el suyo, si no se ha ocultado) */}
+      {encima && !activa && (!esObjeto || !nombreVisible) && (
         <Html position={[cx, 1.6, cz]} center zIndexRange={[8, 6]} style={{ pointerEvents: "none" }}>
           <div
             className="whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold text-white shadow-lg ring-2 ring-white/70 animate-in fade-in zoom-in-95 duration-200"
@@ -461,7 +511,8 @@ function NombreSuelo({ elemento, m, contorno, atenuado, eventos }: NombreProps) 
   );
 }
 
-function EstanteriaElemento({ elemento, opacidad }: { elemento: Elemento; opacidad: number }) {
+/** Estantería; con `vacia`, sin la carga de adorno (se dibuja lo que hay guardado). */
+function EstanteriaElemento({ elemento, opacidad, vacia }: { elemento: Elemento; opacidad: number; vacia: boolean }) {
   const piezas = useMemo(
     () => (elemento.modelo === "pared" ? estanteriaBaldas(elemento.area) : racksPalets(elemento.area)),
     [elemento.modelo, elemento.area],
@@ -470,8 +521,8 @@ function EstanteriaElemento({ elemento, opacidad }: { elemento: Elemento; opacid
     <group>
       <Instancias cajas={piezas.montantes} color={piezas.colores.montante} opacidad={opacidad} />
       <Instancias cajas={piezas.largueros} color={piezas.colores.larguero} opacidad={opacidad} />
-      {piezas.palets.length > 0 && <Instancias cajas={piezas.palets} color={piezas.colores.palet} opacidad={opacidad} />}
-      <Instancias cajas={piezas.cargas} color={piezas.colores.carga} opacidad={opacidad} />
+      {!vacia && piezas.palets.length > 0 && <Instancias cajas={piezas.palets} color={piezas.colores.palet} opacidad={opacidad} />}
+      {!vacia && <Instancias cajas={piezas.cargas} color={piezas.colores.carga} opacidad={opacidad} />}
     </group>
   );
 }

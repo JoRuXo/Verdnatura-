@@ -9,6 +9,8 @@ import { esGamaLigera } from "./dispositivo";
 import type { Elemento } from "./elementos";
 import { ALTURA_CORTE, NAVE, aEscena, aPlano, type Rect } from "./plano";
 import { PALETA_CLARA, PALETA_OSCURA } from "./paleta";
+import type { ArticuloEnZona } from "./DibujoContenido";
+import type { Aspecto } from "@/articulos/aspectos";
 
 const FOV = 40;
 const { ACTION } = CameraControlsImpl;
@@ -190,6 +192,10 @@ export type EscenaNaveProps = {
   resaltadas?: ReadonlySet<string>;
   /** Rótulo encima de algunos elementos (p. ej. cuántos hay de un artículo). */
   marcas?: ReadonlyMap<string, string>;
+  /** Lo que hay guardado en cada elemento (por id). */
+  contenidos?: ReadonlyMap<string, (ArticuloEnZona & { aspecto: Aspecto | null })[]>;
+  /** Enseñar bocadillos con las fotos de lo que hay en cada zona. */
+  bocadillos?: boolean;
   oscuro: boolean;
   referencias: boolean;
   /** Flechas de las líneas en movimiento (pide fotogramas sin parar mientras está activo). */
@@ -205,6 +211,8 @@ export default function EscenaNave({
   zona,
   resaltadas,
   marcas,
+  contenidos,
+  bocadillos = false,
   oscuro,
   referencias,
   flujos,
@@ -253,6 +261,8 @@ export default function EscenaNave({
           activa={activa(e)}
           atenuada={!!zona && !activa(e)}
           marca={marcas?.get(e.id)}
+          contenido={contenidos?.get(e.id)}
+          bocadillo={bocadillos && !zona}
           flujos={flujos}
           contorno={paleta.suelo}
           onElegir={onElegirZona}

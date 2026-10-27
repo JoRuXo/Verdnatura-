@@ -21,6 +21,24 @@ colocado en la zona o pone aquí uno que ya existe.
 Cada artículo puede tener un **stock mínimo** opcional: si el total baja de ahí
 sale marcado «Bajo mínimo» en el catálogo, el buscador y los informes.
 
+## Lo que hay, a la vista en el mapa
+
+Cada artículo puede tener un **dibujo en el mapa** («Cómo se ve en el mapa» en
+la ficha): carros CC apilados, carro CC con barras, con bandejas o con cartón,
+palet de planchas de cartón, palet con film y flejes, o armario con cajas. En
+la zona donde está guardado se dibuja como es, a tamaño real y con los colores
+de las fotos, tantos como diga la cantidad (lo que quepa): 20 carros CC son dos
+pilas de 10; 3 palets que no caben en el suelo van de dos en dos. Si en una
+estantería solo hay cajas de etiquetas, el armario ocupa el lugar de la
+estantería de adorno. Los objetos «Carros CC» sin nada apuntado se dibujan con
+carros montados y vacíos.
+
+Encima de cada zona con algo guardado sale un **bocadillo** con la foto de lo
+que hay y cuánto (3 fotos en el ordenador, 2 en el móvil, y «+N» si hay más);
+al tocarlo se entra en la zona. Se apaga en el menú ☰ → «Fotos de lo que hay en
+cada zona». Las fotos de los artículos se suben sin fondo (PNG o WebP con
+transparencia) para que se vean limpias.
+
 Si se borra del mapa una zona con artículos, la app avisa antes; sus
 cantidades no se pierden, quedan **«Sin ubicar»** y el catálogo las señala
 para colocarlas en otra zona.
@@ -104,6 +122,11 @@ en las líneas de flujo (entradas, vuelta de vacíos, tumba, frío, plantas, CC
 tumbados, boxes), los PC y los cargadores: se ven y se editan, pero no se
 entra en ellos.
 
+Con **«Mostrar el nombre en el mapa»** apagado, el nombre no sale sobre el mapa
+(menos ruido): en las zonas donde se guardan artículos sale al pasar el ratón
+y en «Zonas»; en lo demás, solo al editar. De serie está apagado en los
+cargadores.
+
 ## Imagen de marca
 
 La app usa la imagen oficial de [verdnatura.es](https://verdnatura.es):
@@ -141,7 +164,8 @@ Three.js con React Three Fiber, drei y camera-controls.
 | `useMapa.ts`, `useEditor.ts` | Lectura y guardado en Supabase, y el borrador del modo edición con su historial para deshacer. |
 | `EscenaNave.tsx` | El lienzo 3D, las luces y la cámara con sus vuelos entre vista general y zona. |
 | `Estructura.tsx` | Dibuja la nave fija: suelo, paredes cortadas, pilares, muelles, oficinas, cámara frigorífica, rótulos. |
-| `ElementoMapa.tsx` | Cada elemento según su tipo (flechas de flujo animadas, nombre pintado en el suelo) y, en edición, su selección, arrastre y tiradores. |
+| `ElementoMapa.tsx` | Cada elemento según su tipo (flechas de flujo animadas, nombre pintado en el suelo, lo que tiene guardado y su bocadillo) y, en edición, su selección, arrastre y tiradores. |
+| `contenido.ts`, `DibujoContenido.tsx` | Los artículos dibujados como son (carros CC, palets, armario de etiquetas) con medidas reales y cómo se reparten en la zona; el bocadillo con las fotos. |
 | `PanelEdicion.tsx`, `BarraEdicion.tsx` | Propiedades del elemento seleccionado y barra inferior del modo edición. |
 | `marco.ts`, `Puestos.tsx`, `estanterias.ts` | Marco local (a lo largo / a lo ancho) y modelos de objetos y estanterías, que valen en las dos orientaciones. |
 | `piezas.tsx`, `fundido.ts`, `geometria.ts` | Cajas instanciadas, fundido suave de opacidad y utilidades para pasar del plano a la escena. |
@@ -155,6 +179,7 @@ cotas: cuando haya una medida real basta con reescalar los números de
 | Archivo | Qué contiene |
 | --- | --- |
 | `modelo.ts` | Tipos `Articulo`, `Existencia` y `Caracteristica`, unidades y características sugeridas, URL pública de las fotos. |
+| `aspectos.ts` | Los dibujos que puede tener un artículo en el mapa. |
 | `useArticulos.ts` | Lectura de artículos con sus existencias, guardado (artículo, existencias por zona y limpieza de fotos), borrado y subida de fotos. |
 | `imagen.ts` | Reduce las fotos antes de subirlas. |
 | `FichaArticulo.tsx` | La ficha lateral para crear o editar un artículo; se usa en el catálogo y en el mapa. |

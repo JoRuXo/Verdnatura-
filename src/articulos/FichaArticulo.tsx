@@ -24,6 +24,7 @@ import type { Elemento } from "@/nave/elementos";
 import { ListaHistorial } from "@/historial/ListaHistorial";
 import { useHistorial } from "@/historial/useHistorial";
 import { CARACTERISTICAS_SUGERIDAS, ESTADOS, UNIDADES, estadoStock, nuevaExistencia, total, urlFoto, type Articulo } from "./modelo";
+import { ASPECTOS, esAspecto, type Aspecto } from "./aspectos";
 import {
   CLAVE_ARTICULOS,
   ConflictoError,
@@ -35,6 +36,8 @@ import {
 } from "./useArticulos";
 
 const SIN_UBICAR = "__sin__";
+/** El desplegable no admite valores vacíos: «sin dibujo» va con esta marca. */
+const SIN_DIBUJO = "__sin_dibujo__";
 
 type Props = {
   /** Artículo a editar tal como está guardado, o uno vacío si es nuevo. */
@@ -354,6 +357,28 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
                   />
                 </div>
                 <p className="pb-2 text-xs text-muted-foreground">Opcional. Si el total baja de aquí, el artículo sale marcado como «Bajo mínimo».</p>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Cómo se ve en el mapa</Label>
+                <Select
+                  value={a.aspecto ?? SIN_DIBUJO}
+                  onValueChange={(v) => cambiar({ aspecto: esAspecto(v) ? v : null })}
+                >
+                  <SelectTrigger className="h-9" aria-label="Cómo se ve en el mapa">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SIN_DIBUJO}>Solo la foto, sin dibujo</SelectItem>
+                    {(Object.keys(ASPECTOS) as Aspecto[]).map((v) => (
+                      <SelectItem key={v} value={v}>
+                        {ASPECTOS[v].nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {a.aspecto ? ASPECTOS[a.aspecto].texto : "En el mapa solo sale su foto encima de la zona donde está."}
+                </p>
               </div>
             </div>
           </Seccion>

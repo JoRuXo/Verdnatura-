@@ -19,6 +19,7 @@ export type Database = {
           almacen: boolean
           categoria: string
           clave: string
+          mostrar_nombre: boolean
           color: string
           created_at: string
           descripcion: string
@@ -39,6 +40,7 @@ export type Database = {
           almacen?: boolean
           categoria?: string
           clave: string
+          mostrar_nombre?: boolean
           color?: string
           created_at?: string
           descripcion?: string
@@ -59,6 +61,7 @@ export type Database = {
           almacen?: boolean
           categoria?: string
           clave?: string
+          mostrar_nombre?: boolean
           color?: string
           created_at?: string
           descripcion?: string
@@ -79,6 +82,7 @@ export type Database = {
       }
       articulos: {
         Row: {
+          aspecto: string | null
           caracteristicas: Json
           categoria: string
           created_at: string
@@ -91,6 +95,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aspecto?: string | null
           caracteristicas?: Json
           categoria?: string
           created_at?: string
@@ -103,6 +108,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aspecto?: string | null
           caracteristicas?: Json
           categoria?: string
           created_at?: string

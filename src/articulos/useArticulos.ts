@@ -41,6 +41,7 @@ const filaArticulo = (a: Articulo) => ({
   caracteristicas: a.caracteristicas.filter((c) => c.nombre.trim() || c.valor.trim()),
   fotos: a.fotos,
   stock_minimo: a.stockMinimo,
+  aspecto: a.aspecto,
 });
 
 type CampoArticulo = keyof ReturnType<typeof filaArticulo>;
@@ -53,6 +54,7 @@ const NOMBRE_CAMPO: Record<CampoArticulo, string> = {
   caracteristicas: "las características",
   fotos: "las fotos",
   stock_minimo: "el stock mínimo",
+  aspecto: "cómo se ve en el mapa",
 };
 
 const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);

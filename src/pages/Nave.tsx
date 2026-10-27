@@ -36,7 +36,9 @@ import { BarraEdicion } from "@/nave/BarraEdicion";
 import { PanelArticulo, PanelZona } from "@/nave/Paneles";
 import type { EdicionEscena, Encuadre, RefCentro } from "@/nave/EscenaNave";
 import { useArticulos } from "@/articulos/useArticulos";
-import { articuloVacio, cantidadEn, type Articulo } from "@/articulos/modelo";
+import { articuloVacio, cantidadEn, urlFoto, type Articulo } from "@/articulos/modelo";
+import type { ArticuloEnZona } from "@/nave/DibujoContenido";
+import type { Aspecto } from "@/articulos/aspectos";
 import { FichaArticulo } from "@/articulos/FichaArticulo";
 import { Buscador } from "@/buscador/Buscador";
 
@@ -177,6 +179,41 @@ const unir = (areas: Rect[]): Rect => ({
 });
 
 type Ficha = { articulo: Articulo; esNuevo: boolean; anadirEn?: string };
+
+const CLAVE_BOCADILLOS = "verdnatura-bocadillos";
+const leerBocadillos = () => {
+  try {
+    return localStorage.getItem(CLAVE_BOCADILLOS) !== "no";
+  } catch {
+    return true;
+  }
+};
+
+/** Lo que hay guardado en cada elemento del mapa (con cantidad), por id del elemento. */
+function contenidosPorZona(articulos: Articulo[]) {
+  const porZona = new Map<string, (ArticuloEnZona & { aspecto: Aspecto | null })[]>();
+  for (const a of articulos) {
+    for (const e of a.existencias) {
+      if (!e.elementoId || e.cantidad <= 0) continue;
+      const lista = porZona.get(e.elementoId) ?? [];
+      const ya = lista.find((x) => x.id === a.id);
+      if (ya) ya.cantidad += e.cantidad;
+      else
+        lista.push({
+          id: a.id,
+          nombre: a.nombre,
+          foto: a.fotos[0] ? urlFoto(a.fotos[0]) : null,
+          cantidad: e.cantidad,
+          unidad: a.unidad,
+          aspecto: a.aspecto,
+        });
+      porZona.set(e.elementoId, lista);
+    }
+  }
+  // Lo más abundante primero en el bocadillo
+  porZona.forEach((lista) => lista.sort((x, y) => y.cantidad - x.cantidad));
+  return porZona;
+}
 type BorradoZona = { elemento: Elemento; articulos: { a: Articulo; cantidad: number }[] };
 
 const Nave = () => {
@@ -192,6 +229,15 @@ const Nave = () => {
   const [buscando, setBuscando] = useState(false);
   const [borradoZona, setBorradoZona] = useState<BorradoZona | null>(null);
   const [referencias, setReferencias] = useState(true);
+  const [bocadillos, setBocadillos] = useState(leerBocadillos);
+  const cambiarBocadillos = (si: boolean) => {
+    setBocadillos(si);
+    try {
+      localStorage.setItem(CLAVE_BOCADILLOS, si ? "si" : "no");
+    } catch {
+      // Sin almacenamiento: vale para esta visita
+    }
+  };
   const [vistaKey, setVistaKey] = useState(0);
   const [ayuda, setAyuda] = useState(true);
   // Las flechas en movimiento gastan batería: de serie, apagadas en móvil
@@ -201,6 +247,7 @@ const Nave = () => {
   const centroRef: RefCentro = useRef(null);
 
   const elementos = editor.activo ? editor.borrador : mapa.elementos;
+  const contenidos = useMemo(() => contenidosPorZona(listaArticulos), [listaArticulos]);
   const zona = editor.activo ? undefined : mapa.elementos.find((e) => e.clave === zonaId && e.almacen);
 
   // Artículo buscado (/?articulo=...): sus zonas se señalan en el mapa con la cantidad
@@ -382,6 +429,8 @@ const Nave = () => {
           zona={zona ?? foco?.encuadre}
           resaltadas={foco?.resaltadas}
           marcas={foco?.marcas}
+          contenidos={contenidos}
+          bocadillos={bocadillos && !editor.activo && !articuloFoco}
           oscuro={oscuro}
           referencias={referencias}
           flujos={flujos}
@@ -396,16 +445,21 @@ const Nave = () => {
       <BarraSuperior
         className="absolute inset-x-0 top-0"
         menu={
-          // En el móvil estas dos no caben en la fila de herramientas del mapa
-          <div className="sm:hidden">
+          <>
             <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem checked={flujos} onCheckedChange={(v) => setFlujos(v === true)}>
-              Flechas en movimiento
+            <DropdownMenuCheckboxItem checked={bocadillos} onCheckedChange={(v) => cambiarBocadillos(v === true)}>
+              Fotos de lo que hay en cada zona
             </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem checked={referencias} onCheckedChange={(v) => setReferencias(v === true)}>
-              Referencias del plano (A–K, 1–4)
-            </DropdownMenuCheckboxItem>
-          </div>
+            {/* En el móvil estas dos no caben en la fila de herramientas del mapa */}
+            <div className="sm:hidden">
+              <DropdownMenuCheckboxItem checked={flujos} onCheckedChange={(v) => setFlujos(v === true)}>
+                Flechas en movimiento
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={referencias} onCheckedChange={(v) => setReferencias(v === true)}>
+                Referencias del plano (A–K, 1–4)
+              </DropdownMenuCheckboxItem>
+            </div>
+          </>
         }
       />
 

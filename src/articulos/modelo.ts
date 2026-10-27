@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables } from "@/integrations/supabase/types";
+import { esAspecto, type Aspecto } from "./aspectos";
 
 // Catálogo de artículos: lo que tenemos, con sus fotos, sus características
 // libres y cuántos hay en cada zona del mapa.
@@ -28,6 +29,8 @@ export type Articulo = {
   fotos: string[];
   /** Por debajo de este total, el artículo sale con aviso. */
   stockMinimo: number | null;
+  /** Cómo se dibuja en el mapa 3D, en la zona donde está (null = solo la foto). */
+  aspecto: Aspecto | null;
   existencias: Existencia[];
 };
 
@@ -90,6 +93,7 @@ export const deFila = (f: FilaConExistencias): Articulo => ({
   caracteristicas: comoCaracteristicas(f.caracteristicas),
   fotos: f.fotos ?? [],
   stockMinimo: f.stock_minimo,
+  aspecto: esAspecto(f.aspecto) ? f.aspecto : null,
   existencias: (f.existencias ?? [])
     .map((e) => ({ id: e.id, elementoId: e.elemento_id, cantidad: e.cantidad, nota: e.nota }))
     .sort((a, b) => b.cantidad - a.cantidad || a.id.localeCompare(b.id)),
@@ -111,6 +115,7 @@ export const articuloVacio = (elementoId?: string | null): Articulo => ({
   caracteristicas: [],
   fotos: [],
   stockMinimo: null,
+  aspecto: null,
   existencias: elementoId ? [nuevaExistencia(elementoId)] : [],
 });
 

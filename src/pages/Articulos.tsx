@@ -1,17 +1,14 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, FileDown, Package, Plus, Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { AlertTriangle, Package, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { puntuar } from "@/lib/texto";
-import { MenuGeneral } from "@/components/MenuGeneral";
-import { Logo } from "@/components/Logo";
+import { BarraSuperior } from "@/components/BarraSuperior";
 import { useMapa } from "@/nave/useMapa";
 import { useArticulos } from "@/articulos/useArticulos";
 import { ESTADOS, articuloVacio, estadoStock, sinUbicar, textoBuscable, tieneSinUbicar, total, urlFoto } from "@/articulos/modelo";
 import { FichaArticulo } from "@/articulos/FichaArticulo";
-import { DialogoExportar } from "@/exportar/DialogoExportar";
 
 type Filtro = { tipo: "categoria"; valor: string } | { tipo: "bajo-minimo" } | { tipo: "sin-ubicar" } | null;
 
@@ -48,7 +45,6 @@ const Articulos = () => {
   const mapa = useMapa();
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>(() => filtroInicial(params.get("ver")));
-  const [exportando, setExportando] = useState(false);
 
   const nombreZona = useMemo(() => {
     const porId = new Map(mapa.elementos.map((e) => [e.id, e.nombre]));
@@ -85,31 +81,13 @@ const Articulos = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
-          <Link
-            to="/"
-            aria-label="Volver al mapa"
-            title="Volver al mapa"
-            className="flex items-center gap-2 rounded-full py-1 pr-1 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <Logo className="h-7 sm:h-6" compacto />
-          </Link>
-          <span className="h-6 w-px bg-border" aria-hidden />
-          <h1 className="text-lg font-bold">Artículos</h1>
-          <span className="flex-1" />
-          <Button variant="outline" size="sm" className="hidden gap-1.5 sm:inline-flex" onClick={() => setExportando(true)}>
-            <FileDown className="h-4 w-4" /> Exportar
-          </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => navigate("/articulos/nuevo")}>
-            <Plus className="h-4 w-4" /> <span className="hidden min-[400px]:inline">Nuevo</span>
-          </Button>
-          <MenuGeneral className="h-9 w-9" />
-        </div>
-      </header>
+      <BarraSuperior className="sticky top-0" />
 
-      <main className="mx-auto max-w-6xl space-y-4 px-4 py-4">
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-5 sm:py-6">
+        <div>
+          <h1 className="text-2xl font-bold">Artículos</h1>
+          <p className="text-sm text-muted-foreground">Todo lo que hay en la nave, con sus fotos, cuánto hay y en qué zona está.</p>
+        </div>
         {conSinUbicar.length > 0 && filtro?.tipo !== "sin-ubicar" && (
           <button
             type="button"
@@ -224,7 +202,6 @@ const Articulos = () => {
           onVerEnMapa={(a) => navigate(`/?articulo=${a.id}`)}
         />
       )}
-      <DialogoExportar abierto={exportando} onCerrar={() => setExportando(false)} />
     </div>
   );
 };

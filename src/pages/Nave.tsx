@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { ChevronRight, Grid3x3, ListTree, Maximize, MousePointerClick, Package, Pencil, Route, Search, X } from "lucide-react";
+import { ChevronRight, Grid3x3, ListTree, Maximize, MousePointerClick, Pencil, Route, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -25,8 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { MenuGeneral } from "@/components/MenuGeneral";
-import { Logo } from "@/components/Logo";
+import { BarraSuperior } from "@/components/BarraSuperior";
 import { esGamaLigera } from "@/nave/dispositivo";
 import { agruparPorCategoria, duplicar, nuevoElemento, type Elemento } from "@/nave/elementos";
 import type { Rect } from "@/nave/plano";
@@ -39,8 +38,7 @@ import type { EdicionEscena, Encuadre, RefCentro } from "@/nave/EscenaNave";
 import { useArticulos } from "@/articulos/useArticulos";
 import { articuloVacio, cantidadEn, type Articulo } from "@/articulos/modelo";
 import { FichaArticulo } from "@/articulos/FichaArticulo";
-import { Buscador, type AccionBuscador } from "@/buscador/Buscador";
-import { DialogoExportar } from "@/exportar/DialogoExportar";
+import { Buscador } from "@/buscador/Buscador";
 
 // Three.js pesa bastante: se carga aparte para que la página aparezca enseguida
 const EscenaNave = lazy(() => import("@/nave/EscenaNave"));
@@ -81,7 +79,7 @@ function BotonFlotante({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-9 w-9 sm:h-10 sm:w-10",
+        "h-9 w-9 bg-card/95 shadow-md backdrop-blur sm:h-10 sm:w-10",
         activo && "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
         className,
       )}
@@ -105,7 +103,12 @@ function MenuZonas({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="h-9 w-9 gap-2 px-0 sm:h-10 sm:w-10 lg:w-auto lg:px-4" aria-label="Zonas" title="Zonas">
+        <Button
+          variant="outline"
+          className="h-9 w-9 gap-2 bg-card/95 px-0 shadow-md backdrop-blur sm:h-10 sm:w-10 lg:w-auto lg:px-4"
+          aria-label="Zonas"
+          title="Zonas"
+        >
           <ListTree className="h-4 w-4" />
           <span className="hidden lg:inline">Zonas</span>
         </Button>
@@ -187,7 +190,6 @@ const Nave = () => {
   const listaArticulos = useMemo(() => articulos.data ?? [], [articulos.data]);
   const [ficha, setFicha] = useState<Ficha | null>(null);
   const [buscando, setBuscando] = useState(false);
-  const [exportando, setExportando] = useState(false);
   const [borradoZona, setBorradoZona] = useState<BorradoZona | null>(null);
   const [referencias, setReferencias] = useState(true);
   const [vistaKey, setVistaKey] = useState(0);
@@ -245,13 +247,6 @@ const Nave = () => {
     },
     [navigate],
   );
-
-  const accionBuscador = (accion: AccionBuscador) => {
-    if (accion === "catalogo") navigate("/articulos");
-    else if (accion === "nuevo") navigate("/articulos/nuevo");
-    else if (accion === "historial") navigate("/historial");
-    else setExportando(true);
-  };
 
   const empezarEdicion = () => {
     setAyuda(false);
@@ -397,14 +392,32 @@ const Nave = () => {
         />
       </Suspense>
 
-      {/* Cabecera: barra blanca con el logo y la miga de pan, como la de verdnatura.es */}
-      <header className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2 border-b bg-card/95 px-3 py-2 shadow-sm backdrop-blur sm:gap-4 sm:px-5 sm:py-2.5">
-        <div className="min-w-0">
-          <button type="button" onClick={volver} aria-label="Vista general de la nave" className="block">
-            <Logo className="h-5 sm:h-6" />
-          </button>
-          <nav className="mt-1 flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground" aria-label="Ubicación">
-            <button type="button" onClick={volver} className={cn("hover:text-foreground", !zona && !articuloFoco && "text-foreground")}>
+      {/* Barra de arriba con los apartados (igual en todas las páginas) */}
+      <BarraSuperior
+        className="absolute inset-x-0 top-0"
+        menu={
+          // En el móvil estas dos no caben en la fila de herramientas del mapa
+          <div className="sm:hidden">
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem checked={flujos} onCheckedChange={(v) => setFlujos(v === true)}>
+              Flechas en movimiento
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem checked={referencias} onCheckedChange={(v) => setReferencias(v === true)}>
+              Referencias del plano (A–K, 1–4)
+            </DropdownMenuCheckboxItem>
+          </div>
+        }
+      />
+
+      {/* Debajo de la barra: dónde se está (izquierda) y las herramientas del mapa (derecha) */}
+      <div className="pointer-events-none absolute inset-x-0 top-[7.5rem] z-10 flex items-start justify-between gap-2 px-3 sm:top-[4.75rem] sm:px-5">
+        <div className="pointer-events-auto min-w-0 rounded-full border bg-card/95 px-3.5 py-2 shadow-md backdrop-blur">
+          <nav className="flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground" aria-label="Ubicación">
+            <button
+              type="button"
+              onClick={volver}
+              className={cn("font-medium hover:text-foreground", !zona && !articuloFoco && !editor.activo && "text-foreground")}
+            >
               Nave Holland
             </button>
             {(zona || articuloFoco) && (
@@ -422,23 +435,20 @@ const Nave = () => {
           </nav>
         </div>
 
-        <div className="flex shrink-0 gap-1 sm:gap-2">
+        <div className="pointer-events-auto flex shrink-0 gap-1 sm:gap-2">
           {!editor.activo && (
             <Button
               variant="outline"
               onClick={() => setBuscando(true)}
               aria-label="Buscar"
               title="Buscar (Ctrl+K)"
-              className="h-9 w-9 gap-2 px-0 sm:h-10 sm:w-10 lg:w-auto lg:px-4"
+              className="h-9 w-9 gap-2 bg-card/95 px-0 shadow-md backdrop-blur sm:h-10 sm:w-10 lg:w-auto lg:px-4"
             >
               <Search className="h-4 w-4" />
               <span className="hidden text-muted-foreground lg:inline">Buscar…</span>
               <kbd className="hidden rounded border bg-muted px-1.5 text-[10px] text-muted-foreground lg:inline">Ctrl K</kbd>
             </Button>
           )}
-          <BotonFlotante titulo="Artículos" onClick={() => navigate("/articulos")}>
-            <Package className="h-4 w-4" />
-          </BotonFlotante>
           <MenuZonas
             // Fuera de edición solo las zonas donde se guardan artículos; editando, todas
             elementos={editor.activo ? elementos : elementos.filter((e) => e.almacen)}
@@ -453,10 +463,10 @@ const Nave = () => {
           >
             <Pencil className="h-4 w-4" />
           </BotonFlotante>
-          {/* En el móvil no caben: van dentro del menú */}
-          <BotonFlotante titulo="Vista general" className="hidden sm:inline-flex" onClick={vistaGeneral}>
+          <BotonFlotante titulo="Vista general" onClick={vistaGeneral}>
             <Maximize className="h-4 w-4" />
           </BotonFlotante>
+          {/* En el móvil no caben: van dentro del menú ☰ */}
           <BotonFlotante
             titulo="Flechas de flujo en movimiento"
             activo={flujos}
@@ -473,25 +483,11 @@ const Nave = () => {
           >
             <Grid3x3 className="h-4 w-4" />
           </BotonFlotante>
-          <MenuGeneral className="h-9 w-9 sm:h-10 sm:w-10">
-            <div className="sm:hidden">
-              <DropdownMenuItem onSelect={vistaGeneral} className="gap-2">
-                <Maximize className="h-4 w-4" /> Vista general
-              </DropdownMenuItem>
-              <DropdownMenuCheckboxItem checked={flujos} onCheckedChange={(v) => setFlujos(v === true)}>
-                Flechas en movimiento
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem checked={referencias} onCheckedChange={(v) => setReferencias(v === true)}>
-                Referencias del plano (A–K, 1–4)
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-            </div>
-          </MenuGeneral>
         </div>
-      </header>
+      </div>
 
       {mapa.error && (
-        <div className="absolute left-1/2 top-20 z-20 w-[min(92vw,30rem)] -translate-x-1/2 rounded-lg border border-aviso-borde bg-aviso-suave px-3 py-2 text-xs text-aviso-texto shadow">
+        <div className="absolute left-1/2 top-[10.5rem] z-20 w-[min(92vw,30rem)] -translate-x-1/2 rounded-lg border border-aviso-borde bg-aviso-suave px-3 py-2 text-xs text-aviso-texto shadow sm:top-32">
           No se ha podido leer el mapa guardado: se ve el de serie y no se puede editar. ({mapa.error})
         </div>
       )}
@@ -537,9 +533,7 @@ const Nave = () => {
         elementos={mapa.elementos}
         onArticulo={verArticulo}
         onZona={(z) => elegirZona(z.clave)}
-        onAccion={accionBuscador}
       />
-      <DialogoExportar abierto={exportando} onCerrar={() => setExportando(false)} />
 
       {editor.activo && seleccionado && (
         <PanelEdicion

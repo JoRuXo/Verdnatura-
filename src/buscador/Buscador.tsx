@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { CircleCheck, Clock, FileDown, History, LayoutGrid, Package, Plus, Search } from "lucide-react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { CircleCheck, Clock, Package, Search } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { puntuar } from "@/lib/texto";
 import { TIPOS, type Elemento } from "@/nave/elementos";
 import { ESTADOS, estadoStock, textoBuscable, total, urlFoto, type Articulo } from "@/articulos/modelo";
 import { anotarReciente, leerRecientes } from "./recientes";
-
-export type AccionBuscador = "catalogo" | "nuevo" | "exportar" | "historial";
 
 type Props = {
   abierto: boolean;
@@ -17,7 +15,6 @@ type Props = {
   elementos: Elemento[];
   onArticulo: (a: Articulo) => void;
   onZona: (z: Elemento) => void;
-  onAccion: (accion: AccionBuscador) => void;
 };
 
 const MAX_ARTICULOS = 8;
@@ -73,7 +70,7 @@ function FilaZona({ z, articulos }: { z: Elemento; articulos: number }) {
 }
 
 /** Buscador del mapa: artículos (por nombre, categoría, características o zona) y zonas. */
-export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, onZona, onAccion }: Props) {
+export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, onZona }: Props) {
   const [busqueda, setBusqueda] = useState("");
 
   const zonaPorId = useMemo(() => new Map(elementos.map((e) => [e.id, e])), [elementos]);
@@ -129,10 +126,6 @@ export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, 
     anotarReciente({ tipo: "zona", id: z.id });
     cerrar();
     onZona(z);
-  };
-  const accion = (a: AccionBuscador) => {
-    cerrar();
-    onAccion(a);
   };
 
   const esArticulo = (x: Articulo | Elemento): x is Articulo => "existencias" in x;
@@ -195,24 +188,9 @@ export function Buscador({ abierto, onCerrar, articulos, elementos, onArticulo, 
                     ))}
                   </CommandGroup>
                 )}
-                {(recientes.length > 0 || bajoMinimo.length > 0) && <CommandSeparator />}
-                <CommandGroup heading="Ir a">
-                  <CommandItem value="x:catalogo" onSelect={() => accion("catalogo")}>
-                    <LayoutGrid className="text-muted-foreground" /> Catálogo de artículos
-                  </CommandItem>
-                  <CommandItem value="x:nuevo" onSelect={() => accion("nuevo")}>
-                    <Plus className="text-muted-foreground" /> Nuevo artículo
-                  </CommandItem>
-                  <CommandItem value="x:exportar" onSelect={() => accion("exportar")}>
-                    <FileDown className="text-muted-foreground" /> Exportar stock (Excel o PDF)
-                  </CommandItem>
-                  <CommandItem value="x:historial" onSelect={() => accion("historial")}>
-                    <History className="text-muted-foreground" /> Historial de cambios
-                  </CommandItem>
-                </CommandGroup>
                 {!recientes.length && (
                   <p className="flex items-center gap-2 px-4 pb-3 pt-1 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" /> Lo que abras desde aquí saldrá luego en «Vistos hace poco».
+                    <Clock className="h-3.5 w-3.5" /> Escribe el nombre de un artículo o de una zona. Lo que abras saldrá aquí la próxima vez.
                   </p>
                 )}
                 {bajoMinimo.length === 0 && articulos.some((a) => a.stockMinimo != null) && (

@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { Download, FileDown, History, Menu, Monitor, Moon, QrCode, Sun, UserRound } from "lucide-react";
+import { Download, Menu, Monitor, Moon, QrCode, Sun, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { abrirCambioNombre, useAutor } from "@/lib/autor";
 import { useInstalacion } from "@/lib/instalar";
 import { useConexionTiempoReal } from "@/lib/tiempoReal";
-import { DialogoExportar } from "@/exportar/DialogoExportar";
 import { FUNCIONES } from "@/funciones";
 
 /**
@@ -32,7 +31,6 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
   const autor = useAutor();
   const conexion = useConexionTiempoReal();
   const instalacion = useInstalacion();
-  const [exportando, setExportando] = useState(false);
 
   const instalar = async () => {
     const hecho = await instalacion.instalar();
@@ -67,16 +65,10 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
             </span>
             <span className="text-xs text-muted-foreground">Cambiar</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
 
           {children}
 
-          <DropdownMenuItem onSelect={() => setExportando(true)} className="gap-2">
-            <FileDown className="h-4 w-4" /> Exportar stock (Excel o PDF)
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => navigate("/historial")} className="gap-2">
-            <History className="h-4 w-4" /> Historial de cambios
-          </DropdownMenuItem>
+          {(FUNCIONES.codigosQR || instalacion.puede) && <DropdownMenuSeparator />}
           {FUNCIONES.codigosQR && (
             <DropdownMenuItem onSelect={() => navigate("/qr")} className="gap-2">
               <QrCode className="h-4 w-4" /> Códigos QR de las zonas
@@ -118,7 +110,6 @@ export function MenuGeneral({ children, className }: { children?: ReactNode; cla
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
-      <DialogoExportar abierto={exportando} onCerrar={() => setExportando(false)} />
     </>
   );
 }

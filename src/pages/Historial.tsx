@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, History, Loader2, Search, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { History, Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { MenuGeneral } from "@/components/MenuGeneral";
-import { Logo } from "@/components/Logo";
+import { BarraSuperior } from "@/components/BarraSuperior";
 import { useArticulos } from "@/articulos/useArticulos";
 import { useMapa } from "@/nave/useMapa";
 import { ListaHistorial } from "@/historial/ListaHistorial";
@@ -49,28 +48,10 @@ const Historial = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-3">
-          <Link
-            to="/"
-            aria-label="Volver al mapa"
-            title="Volver al mapa"
-            className="flex items-center gap-2 rounded-full py-1 pr-1 text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <Logo className="h-7 sm:h-6" compacto />
-          </Link>
-          <span className="h-6 w-px bg-border" aria-hidden />
-          <h1 className="text-lg font-bold">Historial</h1>
-          <span className="flex-1" />
-          <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-            <Link to="/articulos">Artículos</Link>
-          </Button>
-          <MenuGeneral className="h-9 w-9" />
-        </div>
-      </header>
+      <BarraSuperior className="sticky top-0" />
 
-      <main className="mx-auto max-w-3xl space-y-4 px-4 py-4">
+      <main className="mx-auto max-w-3xl space-y-4 px-4 py-5 sm:py-6">
+        <h1 className="text-2xl font-bold">Historial de cambios</h1>
         <p className="text-sm text-muted-foreground">
           Todo lo que se cambia en la app queda apuntado aquí con el nombre de quien lo hizo: cantidades, artículos y el mapa.
         </p>

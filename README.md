@@ -54,7 +54,7 @@ Para que varias personas no se pisen:
 
 ## Exportar el stock
 
-Menú → «Exportar stock», o el botón «Exportar» del catálogo. Se elige:
+«Exportar» en la barra de arriba. Se elige:
 - **Excel**: resumen con los números clave y los avisos, una hoja por artículo
   (foto, total, mínimo, estado, dónde está, características) y otra por zona
   con el color de cada zona;
@@ -173,7 +173,8 @@ elemento del mapa; si se borra la zona, la existencia queda «sin ubicar»).
 | `src/lib/autor.ts`, `src/components/DialogoAutor.tsx` | Nombre de quien usa la app y el diálogo para ponerlo. |
 | `src/lib/tiempoReal.ts` | Escucha los cambios de los demás y refresca. |
 | `src/lib/texto.ts` | Búsqueda sin tildes y con puntuación. |
-| `src/components/MenuGeneral.tsx` | Menú de la cabecera: exportar, historial, tema, nombre, instalar. |
+| `src/components/BarraSuperior.tsx` | Barra de arriba, igual en todas las páginas: Mapa, Artículos, Historial, Exportar y «Nuevo artículo» (en el móvil, en una fila de pestañas). |
+| `src/components/MenuGeneral.tsx` | Menú ☰: nombre, tema, instalar la app y el estado del tiempo real. |
 | `src/funciones.ts` | Funciones hechas pero apagadas. |
 | `api/mantenimiento.js` | Tarea nocturna: mantener Supabase activo y copia de seguridad. |
 

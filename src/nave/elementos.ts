@@ -189,8 +189,11 @@ export function nuevoElemento(tipo: TipoElemento, modelo: string | null, x: numb
   const [ancho, fondo] = TAMANOS[modelo ?? tipo] ?? [4, 4];
   // Esquina en la rejilla de 25 cm, dentro de la nave
   const enRejilla = (v: number) => Math.round(v * 4) / 4;
-  const cx = enRejilla(Math.min(Math.max(x, ancho / 2), NAVE.ancho - ancho / 2) - ancho / 2) + ancho / 2;
-  const cy = enRejilla(Math.min(Math.max(y, fondo / 2), NAVE.fondo - fondo / 2) - fondo / 2) + fondo / 2;
+  // Al redondear a la rejilla no puede pasarse del borde de la nave
+  const esquina = (centro: number, medida: number, limite: number) =>
+    Math.min(Math.max(enRejilla(Math.min(Math.max(centro, medida / 2), limite - medida / 2) - medida / 2), 0), limite - medida);
+  const cx = esquina(x, ancho, NAVE.ancho) + ancho / 2;
+  const cy = esquina(y, fondo, NAVE.fondo) + fondo / 2;
   const categoria =
     tipo === "puesto" ? (modelo === "carros-cc" ? "Carros" : "Puestos") : tipo === "estanteria" ? "Estanterías" : "Sin categoría";
   const color = CATEGORIAS_DE_SERIE.find((c) => c.nombre === categoria)?.color ?? "#64748b";

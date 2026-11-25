@@ -67,6 +67,25 @@ Si se borra del mapa una zona con artículos, la app avisa antes; sus
 cantidades no se pierden, quedan **«Sin ubicar»** y el catálogo las señala
 para colocarlas en otra zona.
 
+## Informática
+
+La estantería de la pared larga es el **armario de Informática**: repuestos
+(ordenador, cabezal y impresora Zebra, ribbons, pistolas de escanear,
+cables...) en cajas de cartón, en dos baldas. En el mapa se ve el armario con
+sus cajas en la balda donde están y, al entrar en la zona, la etiqueta amarilla
+de cada una con el nombre de lo que hay dentro.
+
+El panel de la zona muestra el armario **de frente**, como en la nave: se toca
+una caja y con **Subir / Bajar** se cambia de balda (queda en el historial como
+«Balda 1 → 2»). Si hay varias cajas del mismo artículo se mueven juntas. Cada
+existencia guarda su balda (`existencias.balda`, 1 = la de abajo); el armario
+es el modelo de estantería `informatica` (`src/nave/armario.ts` para el 3D,
+`src/nave/ArmarioFrontal.tsx` para la vista de frente).
+
+La migración `20261125000000_informatica.sql` crea la columna de la balda,
+pone a 0 las cantidades de prueba (solo la primera vez), quita el carro de
+bobinas, convierte la estantería en el armario y da de alta lo que hay en él.
+
 ## Buscar
 
 La lupa del mapa (o Ctrl+K, o «/») busca artículos por nombre, categoría,
@@ -202,6 +221,7 @@ Three.js con React Three Fiber, drei y camera-controls.
 | `Estructura.tsx` | Dibuja la nave fija: suelo, paredes cortadas, pilares, muelles, oficinas, cámara frigorífica, rótulos. |
 | `ElementoMapa.tsx` | Cada elemento según su tipo (flechas de flujo animadas, nombre pintado en el suelo, lo que tiene guardado y su bocadillo) y, en edición, su selección, arrastre y tiradores. |
 | `contenido.ts`, `DibujoContenido.tsx` | Los artículos dibujados como son (carros CC, palets, armario de etiquetas) con medidas reales y cómo se reparten en la zona; el bocadillo con las fotos. |
+| `armario.ts`, `ArmarioFrontal.tsx` | El armario de Informática: cajas de cartón en sus baldas con su etiqueta, y su vista de frente en el panel para cambiarlas de balda. |
 | `PanelEdicion.tsx`, `BarraEdicion.tsx` | Propiedades del elemento seleccionado y barra inferior del modo edición. |
 | `marco.ts`, `Puestos.tsx`, `estanterias.ts` | Marco local (a lo largo / a lo ancho) y modelos de objetos y estanterías, que valen en las dos orientaciones. |
 | `piezas.tsx`, `fundido.ts`, `geometria.ts` | Cajas instanciadas, fundido suave de opacidad y utilidades para pasar del plano a la escena. |

@@ -22,7 +22,7 @@ const art = (existencias: [string | null, number][], stockMinimo: number | null 
   ...articuloVacio(),
   nombre: "Carro CC",
   stockMinimo,
-  existencias: existencias.map(([elementoId, cantidad], i) => ({ id: String(i), elementoId, cantidad, nota: "" })),
+  existencias: existencias.map(([elementoId, cantidad], i) => ({ id: String(i), elementoId, cantidad, nota: "", balda: 1 })),
 });
 
 describe("cantidades", () => {
@@ -72,6 +72,12 @@ describe("artículos nuevos", () => {
     expect(articuloVacio().id).not.toBe(articuloVacio().id);
     expect(nuevaExistencia(null).id).not.toBe(nuevaExistencia(null).id);
   });
+
+  it("una existencia nueva va a la balda de abajo si no se dice otra", () => {
+    expect(nuevaExistencia("z").balda).toBe(1);
+    expect(nuevaExistencia("z", 2).balda).toBe(2);
+    expect(articuloVacio("z").existencias[0].balda).toBe(1);
+  });
 });
 
 describe("desde la base de datos", () => {
@@ -87,9 +93,9 @@ describe("desde la base de datos", () => {
       stock_minimo: 3,
       aspecto: "palet-film",
       existencias: [
-        { id: "x", elemento_id: "z1", cantidad: 2, nota: "" },
-        { id: "y", elemento_id: null, cantidad: 9, nota: "" },
-        { id: "w", elemento_id: "z2", cantidad: 2, nota: "" },
+        { id: "x", elemento_id: "z1", cantidad: 2, nota: "", balda: 1 },
+        { id: "y", elemento_id: null, cantidad: 9, nota: "", balda: 1 },
+        { id: "w", elemento_id: "z2", cantidad: 2, nota: "", balda: 1 },
       ],
       ...extra,
     }) as unknown as Parameters<typeof deFila>[0];
@@ -112,6 +118,13 @@ describe("desde la base de datos", () => {
 
   it("ordena las existencias de más a menos y, a igualdad, por id", () => {
     expect(deFila(fila()).existencias.map((e) => e.id)).toEqual(["y", "w", "x"]);
+  });
+
+  it("lee la balda y, si la base de datos aún no la tiene, pone la de abajo", () => {
+    const conBalda = deFila(fila({ existencias: [{ id: "x", elemento_id: "z1", cantidad: 1, nota: "", balda: 2 }] }));
+    expect(conBalda.existencias[0].balda).toBe(2);
+    const sinBalda = deFila(fila({ existencias: [{ id: "x", elemento_id: "z1", cantidad: 1, nota: "" }] }));
+    expect(sinBalda.existencias[0].balda).toBe(1);
   });
 
   it("esAspecto solo acepta los dibujos que existen", () => {

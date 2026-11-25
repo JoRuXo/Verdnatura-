@@ -65,7 +65,7 @@ const NOMBRE_CAMPO: Record<CampoArticulo, string> = {
 
 const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const mismaExistencia = (a: Existencia, b: Existencia) =>
-  a.elementoId === b.elementoId && a.cantidad === b.cantidad && a.nota === b.nota;
+  a.elementoId === b.elementoId && a.cantidad === b.cantidad && a.nota === b.nota && a.balda === b.balda;
 
 /**
  * Guarda solo lo que se ha cambiado en la ficha respecto a como estaba al abrirla
@@ -81,7 +81,7 @@ export async function guardarArticulo(a: Articulo, antes: Articulo | null, nombr
     if (error) throw error;
     if (a.existencias.length) {
       const { error: e } = await supabase.from("existencias").insert(
-        a.existencias.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota })),
+        a.existencias.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })),
       );
       if (e) throw e;
     }
@@ -138,13 +138,13 @@ export async function guardarArticulo(a: Articulo, antes: Articulo | null, nombr
   for (const x of cambiadas) {
     const { error } = await supabase
       .from("existencias")
-      .update({ elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota })
+      .update({ elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })
       .eq("id", x.id);
     if (error) throw error;
   }
   if (nuevas.length) {
     const { error } = await supabase.from("existencias").insert(
-      nuevas.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota })),
+      nuevas.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })),
     );
     if (error) throw error;
   }
@@ -182,6 +182,21 @@ export async function fijarExistencia(id: string, esperada: number, nueva: numbe
     .select("cantidad");
   if (error) throw error;
   return data.length ? data[0].cantidad : null;
+}
+
+/**
+ * Cambia una caja de balda, pero solo si sigue en la que se veía.
+ * Devuelve null si alguien la ha movido entretanto.
+ */
+export async function moverBalda(id: string, esperada: number, nueva: number) {
+  const { data, error } = await supabase
+    .from("existencias")
+    .update({ balda: Math.max(1, Math.round(nueva)) })
+    .eq("id", id)
+    .eq("balda", esperada)
+    .select("balda");
+  if (error) throw error;
+  return data.length ? data[0].balda : null;
 }
 
 /** Comprime y sube una foto a la carpeta del artículo. Devuelve su ruta. */

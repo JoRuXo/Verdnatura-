@@ -15,6 +15,8 @@ export type Existencia = {
   elementoId: string | null;
   cantidad: number;
   nota: string;
+  /** En un armario de baldas, en cuál está (1 = la de abajo). */
+  balda: number;
 };
 
 export type Articulo = {
@@ -113,15 +115,16 @@ export const deFila = (f: FilaConExistencias): Articulo => ({
   stockMinimo: f.stock_minimo,
   aspecto: esAspecto(f.aspecto) ? f.aspecto : null,
   existencias: (f.existencias ?? [])
-    .map((e) => ({ id: e.id, elementoId: e.elemento_id, cantidad: e.cantidad, nota: e.nota }))
+    .map((e) => ({ id: e.id, elementoId: e.elemento_id, cantidad: e.cantidad, nota: e.nota, balda: e.balda ?? 1 }))
     .sort((a, b) => b.cantidad - a.cantidad || a.id.localeCompare(b.id)),
 });
 
-export const nuevaExistencia = (elementoId: string | null): Existencia => ({
+export const nuevaExistencia = (elementoId: string | null, balda = 1): Existencia => ({
   id: crypto.randomUUID(),
   elementoId,
   cantidad: 0,
   nota: "",
+  balda,
 });
 
 export const articuloVacio = (elementoId?: string | null): Articulo => ({

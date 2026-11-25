@@ -125,6 +125,7 @@ export type Database = {
       existencias: {
         Row: {
           articulo_id: string
+          balda: number
           cantidad: number
           created_at: string
           elemento_id: string | null
@@ -134,6 +135,7 @@ export type Database = {
         }
         Insert: {
           articulo_id: string
+          balda?: number
           cantidad?: number
           created_at?: string
           elemento_id?: string | null
@@ -143,6 +145,7 @@ export type Database = {
         }
         Update: {
           articulo_id?: string
+          balda?: number
           cantidad?: number
           created_at?: string
           elemento_id?: string | null

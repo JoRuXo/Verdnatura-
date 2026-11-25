@@ -39,8 +39,8 @@ const ARTICULOS: Articulo[] = [
     fotos: ["carros/carro-cc.png"],
     stockMinimo: 40,
     existencias: [
-      { id: "e1", elementoId: "cc-tumbados", cantidad: 18, nota: "" },
-      { id: "e2", elementoId: "carton", cantidad: 12, nota: "Apilados junto a la pared" },
+      { id: "e1", elementoId: "cc-tumbados", cantidad: 18, nota: "", balda: 1 },
+      { id: "e2", elementoId: "carton", cantidad: 12, nota: "Apilados junto a la pared", balda: 1 },
     ],
   }),
   articulo({
@@ -53,8 +53,8 @@ const ARTICULOS: Articulo[] = [
       { nombre: "Proveedor", valor: "Plásticos Levante" },
     ],
     existencias: [
-      { id: "e3", elementoId: "estanteria", cantidad: 24, nota: "" },
-      { id: "e4", elementoId: null, cantidad: 6, nota: "" },
+      { id: "e3", elementoId: "informatica", cantidad: 24, nota: "", balda: 1 },
+      { id: "e4", elementoId: null, cantidad: 6, nota: "", balda: 1 },
     ],
   }),
   articulo({ id: "cubo", nombre: "Cubo 30 L — “negro”", categoria: "", unidad: "cubos", existencias: [] }),

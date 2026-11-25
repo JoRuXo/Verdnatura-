@@ -33,6 +33,12 @@ describe("mapa de serie", () => {
     expect(new Set(ELEMENTOS_DE_SERIE.map((e) => e.id)).size).toBe(ELEMENTOS_DE_SERIE.length);
   });
 
+  it("tiene el armario de Informática y ya no el carro de bobinas", () => {
+    const inf = ELEMENTOS_DE_SERIE.find((e) => e.clave === "informatica");
+    expect(inf).toMatchObject({ tipo: "estanteria", modelo: "informatica", categoria: "Informática", almacen: true });
+    expect(ELEMENTOS_DE_SERIE.some((e) => e.modelo === "carro-bobinas")).toBe(false);
+  });
+
   it("todos caben dentro de la nave y tienen área positiva", () => {
     for (const e of ELEMENTOS_DE_SERIE) {
       const { x0, y0, x1, y1 } = e.area;
@@ -109,6 +115,14 @@ describe("crear y duplicar", () => {
     expect(carros.categoria).toBe("Carros");
     expect(carros.almacen).toBe(true);
     expect(nuevoElemento("linea", null, 20, 10).sentido).toBe(1);
+  });
+
+  it("un armario de Informática nuevo va en su categoría y guarda artículos", () => {
+    const e = nuevoElemento("estanteria", "informatica", 20, 10);
+    expect(e.nombre).toBe("Armario con cajas");
+    expect(e.categoria).toBe("Informática");
+    expect(e.almacen).toBe(true);
+    expect(e.area.x1 - e.area.x0).toBeCloseTo(2.7, 6);
   });
 
   it("duplicar da otro id y clave y desplaza la copia sin cambiar su tamaño", () => {

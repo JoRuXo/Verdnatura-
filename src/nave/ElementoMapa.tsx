@@ -9,6 +9,7 @@ import { punto3 } from "./geometria";
 import { Instancias } from "./piezas";
 import { useFundido } from "./fundido";
 import { estanteriaBaldas, racksPalets } from "./estanterias";
+import { COLORES_ARMARIO, piezasArmario, type CajaArmario } from "./armario";
 import { marcoDe, type Marco } from "./marco";
 import { PiezasPuesto } from "./Puestos";
 import { piezasContenido } from "./contenido";
@@ -98,8 +99,10 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
   const [cx, cz] = aEscena((x0 + x1) / 2, (y0 + y1) / 2);
   const arrastre = useArrastre(elemento, edicion);
 
+  // El armario de Informática dibuja sus cajas él mismo, en sus baldas
+  const esArmario = elemento.tipo === "estanteria" && elemento.modelo === "informatica";
   // Lo guardado aquí que tiene dibujo, como es de verdad
-  const conDibujo = (contenido ?? []).filter((a) => a.aspecto && a.cantidad > 0);
+  const conDibujo = esArmario ? [] : (contenido ?? []).filter((a) => a.aspecto && a.cantidad > 0);
   const firmaContenido = conDibujo.map((a) => `${a.aspecto}:${a.cantidad}`).join("|");
   const dibujo = useMemo(
     () =>
@@ -118,7 +121,15 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
   const nombreVisible = elemento.mostrarNombre || !!edicion;
   const alturaBocadillo = Math.max(
     dibujo?.altura ?? 0,
-    esObjeto ? 2.3 : elemento.tipo === "estanteria" && !dibujo?.conMueble ? (elemento.modelo === "pared" ? 2.1 : 3.1) : 0.2,
+    esObjeto
+      ? 2.3
+      : esArmario
+        ? 1.2
+        : elemento.tipo === "estanteria" && !dibujo?.conMueble
+          ? elemento.modelo === "pared"
+            ? 2.1
+            : 3.1
+          : 0.2,
   ) + 0.35;
 
   const base = useRef<THREE.MeshBasicMaterial>(null);
@@ -188,7 +199,8 @@ export function ElementoMapa({ elemento, activa, atenuada, flujos, contorno, onE
         <Line points={borde} color={color} lineWidth={activa || encima ? 2.5 : 1.5} transparent opacity={atenuada ? 0.25 : 1} />
       )}
       {/* Si lo guardado trae su mueble (el armario de etiquetas), ese es la estantería */}
-      {elemento.tipo === "estanteria" && !dibujo?.conMueble && (
+      {esArmario && <ArmarioElemento elemento={elemento} contenido={contenido} opacidad={atenuada ? 0.3 : 1} conEtiquetas={activa} />}
+      {elemento.tipo === "estanteria" && !esArmario && !dibujo?.conMueble && (
         <EstanteriaElemento elemento={elemento} opacidad={atenuada ? 0.3 : 1} vacia={!!dibujo} />
       )}
       {/* Con marca o bocadillo, ya se ve el nombre: el rótulo fijo del objeto sobra */}
@@ -523,6 +535,72 @@ function EstanteriaElemento({ elemento, opacidad, vacia }: { elemento: Elemento;
       <Instancias cajas={piezas.largueros} color={piezas.colores.larguero} opacidad={opacidad} />
       {!vacia && piezas.palets.length > 0 && <Instancias cajas={piezas.palets} color={piezas.colores.palet} opacidad={opacidad} />}
       {!vacia && <Instancias cajas={piezas.cargas} color={piezas.colores.carga} opacidad={opacidad} />}
+    </group>
+  );
+}
+
+/** Cajas del armario a partir de lo guardado: una entrada por artículo y balda. */
+const cajasDe = (contenido: Props["contenido"]): CajaArmario[] =>
+  (contenido ?? []).flatMap((a) =>
+    (a.baldas ?? [{ balda: 1, cantidad: a.cantidad }]).map((b) => ({ id: a.id, nombre: a.nombre, balda: b.balda, cantidad: b.cantidad })),
+  );
+
+/** Etiqueta amarilla pegada delante de una caja, con el nombre de lo que hay dentro. */
+function EtiquetaCaja({ p, giro, ancho, alto, texto }: { p: [number, number, number]; giro: number; ancho: number; alto: number; texto: string }) {
+  return (
+    <group position={p} rotation={[0, giro, 0]}>
+      <mesh raycast={() => null}>
+        <planeGeometry args={[ancho, alto]} />
+        <meshBasicMaterial color={COLORES_ARMARIO.etiqueta} toneMapped={false} />
+      </mesh>
+      <Suspense fallback={null}>
+        <Text
+          font={fuenteSuelo}
+          fontSize={alto * 0.42}
+          maxWidth={ancho * 0.92}
+          lineHeight={1}
+          textAlign="center"
+          anchorX="center"
+          anchorY="middle"
+          color="#1a1a1a"
+          position={[0, 0, 0.002]}
+          raycast={() => null}
+        >
+          {texto}
+        </Text>
+      </Suspense>
+    </group>
+  );
+}
+
+/** Armario de Informática: el mueble, sus baldas y las cajas de cartón con su etiqueta. */
+function ArmarioElemento({
+  elemento,
+  contenido,
+  opacidad,
+  conEtiquetas,
+}: {
+  elemento: Elemento;
+  contenido: Props["contenido"];
+  opacidad: number;
+  conEtiquetas: boolean;
+}) {
+  const cajas = cajasDe(contenido);
+  const firma = cajas.map((c) => `${c.id}:${c.balda}:${c.cantidad}:${c.nombre}`).join("|");
+  const piezas = useMemo(
+    () => piezasArmario(elemento.area, cajas),
+    // cajas se resume en firma
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [elemento.area, firma],
+  );
+  return (
+    <group>
+      <Instancias cajas={piezas.cuerpo} color={COLORES_ARMARIO.cuerpo} opacidad={opacidad} />
+      <Instancias cajas={piezas.baldas} color={COLORES_ARMARIO.balda} opacidad={opacidad} />
+      {piezas.cajas.map((g) => (
+        <Instancias key={`${g.color}-${g.cajas.length}`} cajas={g.cajas} color={g.color} opacidad={opacidad} />
+      ))}
+      {conEtiquetas && piezas.etiquetas.map((e) => <EtiquetaCaja key={`${e.id}-${e.p.join(",")}`} {...e} />)}
     </group>
   );
 }

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { TIPOS, referenciaDe, textoSentido, type Elemento } from "./elementos";
 import { ESTADOS, cantidadEn, estadoStock, sinUbicar, total, urlFoto, type Articulo } from "@/articulos/modelo";
 import { CLAVE_ARTICULOS, ajustarExistencia, fijarExistencia } from "@/articulos/useArticulos";
+import { ArmarioFrontal } from "./ArmarioFrontal";
 
 /** Panel flotante: a la derecha en pantallas anchas, abajo en el móvil. */
 function PanelLateral({ id, children }: { id: string; children: ReactNode }) {
@@ -291,6 +292,7 @@ export function PanelZona({
         {zona.muelle && <Dato etiqueta="Llega a">{zona.muelle}</Dato>}
         <Dato etiqueta="Posición en el plano">{referenciaDe(zona.area)}</Dato>
       </dl>
+      {zona.tipo === "estanteria" && zona.modelo === "informatica" && <ArmarioFrontal zona={zona} articulos={articulos} />}
       <QueHayAqui zona={zona} articulos={articulos} cargando={cargando} onAbrir={onAbrir} onNuevo={onNuevo} />
       <div className="mt-4 flex gap-2">
         <Button className="flex-1" variant="secondary" onClick={onVolver}>

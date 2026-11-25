@@ -22,7 +22,7 @@ export type Elemento = {
   /** Líneas: 1 = hacia +x/+y (muelles / fondo), -1 = al revés, null = sin flecha. */
   sentido: 1 | -1 | null;
   muelle: string | null;
-  /** Estanterías: "carton" | "pared". Objetos: "pc" | "cargador" | "carro-bobinas" | "carros-cc". */
+  /** Estanterías: "carton" | "pared" | "informatica". Objetos: "pc" | "cargador" | "carro-bobinas" | "carros-cc". */
   modelo: string | null;
   descripcion: string;
   /** Se guardan artículos aquí: solo en estos se entra desde el mapa y se apunta stock. */
@@ -50,6 +50,7 @@ export const MODELOS: Record<"estanteria" | "puesto", { valor: string; nombre: s
   estanteria: [
     { valor: "carton", nombre: "Rack de palets" },
     { valor: "pared", nombre: "Estantería de baldas" },
+    { valor: "informatica", nombre: "Armario con cajas" },
   ],
   puesto: [
     { valor: "carros-cc", nombre: "Carros CC" },
@@ -73,6 +74,7 @@ export const CATEGORIAS_DE_SERIE: { nombre: string; color: string }[] = [
   { nombre: "Estanterías", color: "#78716c" },
   { nombre: "Carros", color: "#2563eb" },
   { nombre: "Puestos", color: "#475569" },
+  { nombre: "Informática", color: "#6366f1" },
 ];
 
 export const COLORES = [
@@ -172,6 +174,7 @@ const TAMANOS: Record<string, [number, number]> = {
   area: [5, 5],
   carton: [8.1, 2.3],
   pared: [2.7, 0.6],
+  informatica: [2.7, 0.6],
   "carros-cc": [3.2, 1.5],
   cargador: [1.5, 2.2],
   pc: [1.0, 0.6],
@@ -195,7 +198,7 @@ export function nuevoElemento(tipo: TipoElemento, modelo: string | null, x: numb
   const cx = esquina(x, ancho, NAVE.ancho) + ancho / 2;
   const cy = esquina(y, fondo, NAVE.fondo) + fondo / 2;
   const categoria =
-    tipo === "puesto" ? (modelo === "carros-cc" ? "Carros" : "Puestos") : tipo === "estanteria" ? "Estanterías" : "Sin categoría";
+    tipo === "puesto" ? (modelo === "carros-cc" ? "Carros" : "Puestos") : tipo === "estanteria" ? (modelo === "informatica" ? "Informática" : "Estanterías") : "Sin categoría";
   const color = CATEGORIAS_DE_SERIE.find((c) => c.nombre === categoria)?.color ?? "#64748b";
   return {
     id: crypto.randomUUID(),

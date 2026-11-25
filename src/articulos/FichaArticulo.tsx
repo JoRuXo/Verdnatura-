@@ -397,7 +397,7 @@ export function FichaArticulo({ inicial, esNuevo, anadirEn, elementos, categoria
                   cambiar({
                     existencias: [
                       ...a.existencias,
-                      { id: crypto.randomUUID(), elementoId: zonas.find((z) => !zonasUsadas.has(z.id))?.id ?? null, cantidad: 0, nota: "" },
+                      nuevaExistencia(zonas.find((z) => !zonasUsadas.has(z.id))?.id ?? null),
                     ],
                   })
                 }

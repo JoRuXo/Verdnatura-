@@ -198,8 +198,10 @@ function contenidosPorZona(articulos: Articulo[]) {
       if (!e.elementoId || e.cantidad <= 0) continue;
       const lista = porZona.get(e.elementoId) ?? [];
       const ya = lista.find((x) => x.id === a.id);
-      if (ya) ya.cantidad += e.cantidad;
-      else
+      if (ya) {
+        ya.cantidad += e.cantidad;
+        ya.baldas?.push({ balda: e.balda, cantidad: e.cantidad });
+      } else
         lista.push({
           id: a.id,
           nombre: a.nombre,
@@ -207,6 +209,7 @@ function contenidosPorZona(articulos: Articulo[]) {
           cantidad: e.cantidad,
           unidad: a.unidad,
           aspecto: a.aspecto,
+          baldas: [{ balda: e.balda, cantidad: e.cantidad }],
         });
       porZona.set(e.elementoId, lista);
     }

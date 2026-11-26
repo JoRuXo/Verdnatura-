@@ -22,7 +22,7 @@ const art = (existencias: [string | null, number][], stockMinimo: number | null 
   ...articuloVacio(),
   nombre: "Carro CC",
   stockMinimo,
-  existencias: existencias.map(([elementoId, cantidad], i) => ({ id: String(i), elementoId, cantidad, nota: "", balda: 1 })),
+  existencias: existencias.map(([elementoId, cantidad], i) => ({ id: String(i), elementoId, cantidad, nota: "", balda: 1, posicion: null })),
 });
 
 describe("cantidades", () => {
@@ -78,6 +78,10 @@ describe("artículos nuevos", () => {
     expect(nuevaExistencia("z", 2).balda).toBe(2);
     expect(articuloVacio("z").existencias[0].balda).toBe(1);
   });
+
+  it("una existencia nueva se coloca sola en el armario", () => {
+    expect(nuevaExistencia("z").posicion).toBeNull();
+  });
 });
 
 describe("desde la base de datos", () => {
@@ -125,6 +129,13 @@ describe("desde la base de datos", () => {
     expect(conBalda.existencias[0].balda).toBe(2);
     const sinBalda = deFila(fila({ existencias: [{ id: "x", elemento_id: "z1", cantidad: 1, nota: "" }] }));
     expect(sinBalda.existencias[0].balda).toBe(1);
+  });
+
+  it("lee el sitio en la balda y, si no lo tiene, se coloca sola", () => {
+    const conSitio = deFila(fila({ existencias: [{ id: "x", elemento_id: "z1", cantidad: 1, nota: "", balda: 2, posicion: 0.25 }] }));
+    expect(conSitio.existencias[0].posicion).toBe(0.25);
+    const sinSitio = deFila(fila({ existencias: [{ id: "x", elemento_id: "z1", cantidad: 1, nota: "", balda: 1 }] }));
+    expect(sinSitio.existencias[0].posicion).toBeNull();
   });
 
   it("esAspecto solo acepta los dibujos que existen", () => {

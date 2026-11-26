@@ -65,7 +65,7 @@ const NOMBRE_CAMPO: Record<CampoArticulo, string> = {
 
 const igual = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const mismaExistencia = (a: Existencia, b: Existencia) =>
-  a.elementoId === b.elementoId && a.cantidad === b.cantidad && a.nota === b.nota && a.balda === b.balda;
+  a.elementoId === b.elementoId && a.cantidad === b.cantidad && a.nota === b.nota && a.balda === b.balda && a.posicion === b.posicion;
 
 /**
  * Guarda solo lo que se ha cambiado en la ficha respecto a como estaba al abrirla
@@ -81,7 +81,7 @@ export async function guardarArticulo(a: Articulo, antes: Articulo | null, nombr
     if (error) throw error;
     if (a.existencias.length) {
       const { error: e } = await supabase.from("existencias").insert(
-        a.existencias.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })),
+        a.existencias.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda, posicion: x.posicion })),
       );
       if (e) throw e;
     }
@@ -138,13 +138,13 @@ export async function guardarArticulo(a: Articulo, antes: Articulo | null, nombr
   for (const x of cambiadas) {
     const { error } = await supabase
       .from("existencias")
-      .update({ elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })
+      .update({ elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda, posicion: x.posicion })
       .eq("id", x.id);
     if (error) throw error;
   }
   if (nuevas.length) {
     const { error } = await supabase.from("existencias").insert(
-      nuevas.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda })),
+      nuevas.map((x) => ({ id: x.id, articulo_id: a.id, elemento_id: x.elementoId, cantidad: x.cantidad, nota: x.nota, balda: x.balda, posicion: x.posicion })),
     );
     if (error) throw error;
   }
@@ -184,19 +184,36 @@ export async function fijarExistencia(id: string, esperada: number, nueva: numbe
   return data.length ? data[0].cantidad : null;
 }
 
+/** Dónde está una caja en su armario: balda y sitio a lo largo (0–1; null = se coloca sola). */
+export type SitioCaja = { balda: number; posicion: number | null };
+
+/** La posición se guarda con tres decimales: de sobra (milímetros) y comparable sin líos de redondeo. */
+export const redondearPosicion = (p: number | null) => (p == null ? null : Math.min(1, Math.max(0, Math.round(p * 1000) / 1000)));
+
 /**
- * Cambia una caja de balda, pero solo si sigue en la que se veía.
+ * Pone una caja en otro sitio del armario, pero solo si sigue donde se veía.
  * Devuelve null si alguien la ha movido entretanto.
  */
-export async function moverBalda(id: string, esperada: number, nueva: number) {
-  const { data, error } = await supabase
+export async function colocarCaja(id: string, antes: SitioCaja, nuevo: SitioCaja) {
+  let consulta = supabase
     .from("existencias")
-    .update({ balda: Math.max(1, Math.round(nueva)) })
+    .update({ balda: Math.max(1, Math.round(nuevo.balda)), posicion: redondearPosicion(nuevo.posicion) })
     .eq("id", id)
-    .eq("balda", esperada)
-    .select("balda");
+    .eq("balda", antes.balda);
+  consulta = antes.posicion == null ? consulta.is("posicion", null) : consulta.eq("posicion", antes.posicion);
+  const { data, error } = await consulta.select("balda, posicion");
   if (error) throw error;
-  return data.length ? data[0].balda : null;
+  return data.length ? data[0] : null;
+}
+
+/**
+ * Cambia la nota de una caja (lo que hay en esa zona), pero solo si sigue la que se veía.
+ * Devuelve null si alguien la ha cambiado entretanto.
+ */
+export async function cambiarNota(id: string, esperada: string, nueva: string) {
+  const { data, error } = await supabase.from("existencias").update({ nota: nueva }).eq("id", id).eq("nota", esperada).select("nota");
+  if (error) throw error;
+  return data.length ? data[0].nota : null;
 }
 
 /** Comprime y sube una foto a la carpeta del artículo. Devuelve su ruta. */

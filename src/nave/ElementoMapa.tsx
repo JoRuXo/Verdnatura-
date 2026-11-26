@@ -9,7 +9,7 @@ import { punto3 } from "./geometria";
 import { Instancias } from "./piezas";
 import { useFundido } from "./fundido";
 import { estanteriaBaldas, racksPalets } from "./estanterias";
-import { COLORES_ARMARIO, piezasArmario, type CajaArmario } from "./armario";
+import { COLORES_ARMARIO, numeroBaldas, piezasArmario, type CajaArmario } from "./armario";
 import { marcoDe, type Marco } from "./marco";
 import { PiezasPuesto } from "./Puestos";
 import { piezasContenido } from "./contenido";
@@ -539,10 +539,16 @@ function EstanteriaElemento({ elemento, opacidad, vacia }: { elemento: Elemento;
   );
 }
 
-/** Cajas del armario a partir de lo guardado: una entrada por artículo y balda. */
+/** Cajas del armario a partir de lo guardado: una entrada por existencia (artículo en esta zona). */
 const cajasDe = (contenido: Props["contenido"]): CajaArmario[] =>
   (contenido ?? []).flatMap((a) =>
-    (a.baldas ?? [{ balda: 1, cantidad: a.cantidad }]).map((b) => ({ id: a.id, nombre: a.nombre, balda: b.balda, cantidad: b.cantidad })),
+    (a.baldas ?? [{ existenciaId: a.id, balda: 1, cantidad: a.cantidad, posicion: null }]).map((b) => ({
+      id: b.existenciaId,
+      nombre: a.nombre,
+      balda: b.balda,
+      cantidad: b.cantidad,
+      posicion: b.posicion,
+    })),
   );
 
 /** Etiqueta amarilla pegada delante de una caja, con el nombre de lo que hay dentro. */
@@ -586,12 +592,13 @@ function ArmarioElemento({
   conEtiquetas: boolean;
 }) {
   const cajas = cajasDe(contenido);
-  const firma = cajas.map((c) => `${c.id}:${c.balda}:${c.cantidad}:${c.nombre}`).join("|");
+  const baldas = numeroBaldas(elemento.baldas);
+  const firma = cajas.map((c) => `${c.id}:${c.balda}:${c.posicion}:${c.cantidad}:${c.nombre}`).join("|");
   const piezas = useMemo(
-    () => piezasArmario(elemento.area, cajas),
+    () => piezasArmario(elemento.area, cajas, baldas),
     // cajas se resume en firma
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [elemento.area, firma],
+    [elemento.area, firma, baldas],
   );
   return (
     <group>

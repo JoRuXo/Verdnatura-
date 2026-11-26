@@ -17,6 +17,8 @@ export type Existencia = {
   nota: string;
   /** En un armario de baldas, en cuál está (1 = la de abajo). */
   balda: number;
+  /** En un armario de baldas, dónde empieza a lo largo de la balda (0–1); null = se coloca sola. */
+  posicion: number | null;
 };
 
 export type Articulo = {
@@ -115,7 +117,7 @@ export const deFila = (f: FilaConExistencias): Articulo => ({
   stockMinimo: f.stock_minimo,
   aspecto: esAspecto(f.aspecto) ? f.aspecto : null,
   existencias: (f.existencias ?? [])
-    .map((e) => ({ id: e.id, elementoId: e.elemento_id, cantidad: e.cantidad, nota: e.nota, balda: e.balda ?? 1 }))
+    .map((e) => ({ id: e.id, elementoId: e.elemento_id, cantidad: e.cantidad, nota: e.nota, balda: e.balda ?? 1, posicion: e.posicion ?? null }))
     .sort((a, b) => b.cantidad - a.cantidad || a.id.localeCompare(b.id)),
 });
 
@@ -125,6 +127,7 @@ export const nuevaExistencia = (elementoId: string | null, balda = 1): Existenci
   cantidad: 0,
   nota: "",
   balda,
+  posicion: null,
 });
 
 export const articuloVacio = (elementoId?: string | null): Articulo => ({

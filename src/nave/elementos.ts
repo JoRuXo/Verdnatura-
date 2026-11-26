@@ -29,6 +29,8 @@ export type Elemento = {
   almacen: boolean;
   /** Se pinta su nombre en el mapa (apagado, solo sale al pasar por encima y en «Zonas»). */
   mostrarNombre: boolean;
+  /** Armarios de baldas: cuántas tiene (null = las de serie). */
+  baldas: number | null;
   orden: number;
 };
 
@@ -117,6 +119,7 @@ const normalizar = (f: FilaInicial | Tables<"elementos_mapa">, id: string, orden
   descripcion: f.descripcion,
   almacen: "almacen" in f && typeof f.almacen === "boolean" ? f.almacen : almacenDeSerie(f.tipo, f.modelo),
   mostrarNombre: "mostrar_nombre" in f && typeof f.mostrar_nombre === "boolean" ? f.mostrar_nombre : f.modelo !== "cargador",
+  baldas: "baldas" in f && typeof f.baldas === "number" ? f.baldas : null,
   orden,
 });
 
@@ -142,6 +145,7 @@ export const aFila = (e: Elemento, orden: number): TablesInsert<"elementos_mapa"
   descripcion: e.descripcion,
   almacen: e.almacen,
   mostrar_nombre: e.mostrarNombre,
+  baldas: e.baldas,
   orden,
 });
 
@@ -214,6 +218,7 @@ export function nuevoElemento(tipo: TipoElemento, modelo: string | null, x: numb
     descripcion: "",
     almacen: almacenDeSerie(tipo, modelo),
     mostrarNombre: true,
+    baldas: null,
     orden: 9999,
   };
 }

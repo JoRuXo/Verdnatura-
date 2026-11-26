@@ -200,7 +200,7 @@ function contenidosPorZona(articulos: Articulo[]) {
       const ya = lista.find((x) => x.id === a.id);
       if (ya) {
         ya.cantidad += e.cantidad;
-        ya.baldas?.push({ balda: e.balda, cantidad: e.cantidad });
+        ya.baldas?.push({ existenciaId: e.id, balda: e.balda, cantidad: e.cantidad, posicion: e.posicion });
       } else
         lista.push({
           id: a.id,
@@ -209,7 +209,7 @@ function contenidosPorZona(articulos: Articulo[]) {
           cantidad: e.cantidad,
           unidad: a.unidad,
           aspecto: a.aspecto,
-          baldas: [{ balda: e.balda, cantidad: e.cantidad }],
+          baldas: [{ existenciaId: e.id, balda: e.balda, cantidad: e.cantidad, posicion: e.posicion }],
         });
       porZona.set(e.elementoId, lista);
     }
@@ -559,6 +559,8 @@ const Nave = () => {
           zona={zona}
           articulos={listaArticulos}
           cargando={articulos.isLoading}
+          esAdmin={esAdmin}
+          categorias={categoriasArticulos}
           onVolver={volver}
           onAbrir={(a, ponerAqui) => setFicha({ articulo: a, esNuevo: false, anadirEn: ponerAqui ? zona.id : undefined })}
           onNuevo={() => setFicha({ articulo: articuloVacio(zona.id), esNuevo: true })}

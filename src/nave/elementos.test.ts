@@ -153,6 +153,13 @@ describe("ida y vuelta con la base de datos", () => {
     const v = deFila(fila as Parameters<typeof deFila>[0]);
     expect(v.almacen).toBe(false); // cargador
     expect(v.mostrarNombre).toBe(false); // cargador: sin nombre
+    expect(v.baldas).toBeNull();
+  });
+
+  it("las baldas de un armario van y vuelven", () => {
+    const e = { ...nuevoElemento("estanteria", "informatica", 40, 10), baldas: 4 };
+    expect(aFila(e, 0).baldas).toBe(4);
+    expect(deFila({ ...aFila(e, 0), id: e.id, orden: 0 } as Parameters<typeof deFila>[0]).baldas).toBe(4);
   });
 });
 

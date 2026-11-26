@@ -12,8 +12,8 @@ export type ArticuloEnZona = {
   foto: string | null;
   cantidad: number;
   unidad: string;
-  /** Cuántas hay en cada balda (armarios de baldas). */
-  baldas?: { balda: number; cantidad: number }[];
+  /** Armarios de baldas: cada existencia, en qué balda y en qué sitio está. */
+  baldas?: { existenciaId: string; balda: number; cantidad: number; posicion: number | null }[];
 };
 
 /** Lo que hay guardado en una zona, dibujado con sus piezas. */

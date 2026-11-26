@@ -2,8 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { History, Minus, Package, Plus, X } from "lucide-react";
+import { History, MousePointerClick, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { TIPOS, referenciaDe, textoSentido, type Elemento } from "./elementos";
-import { ESTADOS, cantidadEn, estadoStock, sinUbicar, total, urlFoto, type Articulo } from "@/articulos/modelo";
-import { CLAVE_ARTICULOS, ajustarExistencia, fijarExistencia } from "@/articulos/useArticulos";
-import { ArmarioFrontal } from "./ArmarioFrontal";
+import { ESTADOS, cantidadEn, estadoStock, sinUbicar, total, type Articulo } from "@/articulos/modelo";
+import { ArmarioEditable } from "./ArmarioEditable";
+import { ContadorCantidad, Miniatura } from "./ControlesArticulo";
+import { DetalleArticulo } from "./DetalleArticulo";
+import { TextoEditable } from "./TextoEditable";
+import { CLAVE_MAPA, guardarZona, type CambiosZona } from "./useMapa";
 
 /** Panel flotante: a la derecha en pantallas anchas, abajo en el móvil. */
 function PanelLateral({ id, children }: { id: string; children: ReactNode }) {
@@ -34,162 +38,30 @@ function PanelLateral({ id, children }: { id: string; children: ReactNode }) {
   );
 }
 
-function Miniatura({ a, grande = false }: { a: Articulo; grande?: boolean }) {
-  return (
-    <span
-      className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-md border bg-white",
-        grande ? "h-14 w-14" : "h-10 w-10",
-      )}
-    >
-      {a.fotos[0] ? (
-        <img src={urlFoto(a.fotos[0])} alt="" loading="lazy" className="h-full w-full object-contain" />
-      ) : (
-        <Package className={cn("text-muted-foreground", grande ? "h-6 w-6" : "h-5 w-5")} />
-      )}
-    </span>
-  );
-}
-
-function Dato({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
-  return (
-    <div className="flex justify-between gap-3 py-1.5 text-sm">
-      <dt className="text-muted-foreground">{etiqueta}</dt>
-      <dd className="text-right font-medium">{children}</dd>
-    </div>
-  );
-}
-
-const ESPERA_ENVIO = 800;
-
-/**
- * Un artículo de la zona con su cantidad y botones + / −. Los toques seguidos se
- * juntan y se mandan como una sola suma o resta (una sola línea en el historial);
- * la suma la hace la base de datos, así que dos personas contando a la vez no se
- * pisan. Tocando el número se escribe la cantidad exacta.
- */
-function FilaStock({ a, zona, onAbrir }: { a: Articulo; zona: Elemento; onAbrir: () => void }) {
-  const queryClient = useQueryClient();
+/** Un artículo de la zona: se toca para verlo y editarlo; a la derecha, su cantidad con + / −. */
+function FilaArticulo({ a, zona, elegido, onElegir }: { a: Articulo; zona: Elemento; elegido: boolean; onElegir: () => void }) {
   const existencia = a.existencias.find((e) => e.elementoId === zona.id);
-  const [pendiente, setPendiente] = useState(0);
-  const pendienteRef = useRef(0);
-  const espera = useRef<number>();
-  const [escribiendo, setEscribiendo] = useState<string | null>(null);
-
-  const ponerEnCache = (id: string, cantidad: (antes: number) => number) =>
-    queryClient.setQueryData<Articulo[]>(CLAVE_ARTICULOS, (lista) =>
-      lista?.map((x) =>
-        x.id !== a.id ? x : { ...x, existencias: x.existencias.map((e) => (e.id === id ? { ...e, cantidad: cantidad(e.cantidad) } : e)) },
-      ),
-    );
-
-  const enviar = async () => {
-    window.clearTimeout(espera.current);
-    const delta = pendienteRef.current;
-    if (!delta || !existencia) return;
-    pendienteRef.current = 0;
-    setPendiente(0);
-    ponerEnCache(existencia.id, (c) => Math.max(0, c + delta));
-    try {
-      const nueva = await ajustarExistencia(existencia.id, delta);
-      if (nueva != null) ponerEnCache(existencia.id, () => nueva);
-    } catch (err) {
-      toast.error(`No se ha podido guardar la cantidad de ${a.nombre}`, { description: (err as Error).message });
-      void queryClient.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
-    }
-  };
-
-  // Al cerrar el panel con toques sin mandar, se mandan ya
-  const enviarRef = useRef(enviar);
-  enviarRef.current = enviar;
-  useEffect(() => () => void enviarRef.current(), []);
-
   if (!existencia) return null;
-  const cantidad = existencia.cantidad + pendiente;
-
-  const sumar = (d: number) => {
-    if (cantidad + d < 0) return;
-    pendienteRef.current += d;
-    setPendiente(pendienteRef.current);
-    window.clearTimeout(espera.current);
-    espera.current = window.setTimeout(() => void enviar(), ESPERA_ENVIO);
-  };
-
-  const confirmarEscrito = async () => {
-    const texto = escribiendo;
-    setEscribiendo(null);
-    const nueva = parseInt(texto ?? "", 10);
-    if (Number.isNaN(nueva) || nueva < 0 || nueva === existencia.cantidad) return;
-    try {
-      const guardada = await fijarExistencia(existencia.id, existencia.cantidad, nueva);
-      if (guardada == null) {
-        toast.warning(`Alguien acaba de cambiar ${a.nombre} aquí`, { description: "Ya ves la cantidad de ahora; si hace falta, vuelve a escribirla." });
-        void queryClient.invalidateQueries({ queryKey: CLAVE_ARTICULOS });
-      } else ponerEnCache(existencia.id, () => guardada);
-    } catch (err) {
-      toast.error(`No se ha podido guardar la cantidad de ${a.nombre}`, { description: (err as Error).message });
-    }
-  };
-
   const bajo = estadoStock(a) === "bajo-minimo";
-
+  const resumen = a.descripcion.split("\n").find((l) => l.trim()) ?? "";
   return (
-    <li className="flex items-center gap-2 px-2 py-2">
-      <button type="button" onClick={onAbrir} className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md text-left hover:opacity-80">
+    <li className={cn("flex items-center gap-2 px-2 py-2 transition-colors", elegido && "bg-marca-lima/15")}>
+      <button
+        type="button"
+        onClick={onElegir}
+        aria-pressed={elegido}
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md text-left hover:opacity-80"
+      >
         <Miniatura a={a} />
         <span className="min-w-0">
           <span className="line-clamp-2 text-sm font-medium leading-tight">{a.nombre}</span>
           <span className="block truncate text-xs text-muted-foreground">
             {bajo ? <span className="font-medium text-peligro">Bajo mínimo · </span> : null}
-            {a.categoria || a.unidad}
+            {resumen || a.categoria || a.unidad}
           </span>
         </span>
       </button>
-      <div className="flex shrink-0 items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-9 w-9 rounded-full"
-          aria-label={`Quitar uno de ${a.nombre}`}
-          disabled={cantidad <= 0}
-          onClick={() => sumar(-1)}
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        {escribiendo != null ? (
-          <input
-            autoFocus
-            type="number"
-            inputMode="numeric"
-            min={0}
-            value={escribiendo}
-            onChange={(e) => setEscribiendo(e.target.value)}
-            onBlur={() => void confirmarEscrito()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-              if (e.key === "Escape") setEscribiendo(null);
-            }}
-            className="h-9 w-14 rounded-md border bg-background text-center text-base font-semibold tabular-nums"
-            aria-label={`Cantidad de ${a.nombre}`}
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={async () => {
-              await enviar();
-              setEscribiendo(String(existencia.cantidad + pendienteRef.current));
-            }}
-            className={cn("flex w-14 flex-col items-center rounded-md py-0.5 leading-tight hover:bg-accent", pendiente !== 0 && "text-marca-lima-oscuro")}
-            title="Escribir la cantidad"
-          >
-            <span className="text-base font-semibold tabular-nums">{cantidad}</span>
-            <span className="max-w-full truncate text-[10px] text-muted-foreground">{a.unidad}</span>
-          </button>
-        )}
-        <Button variant="outline" size="icon" className="h-9 w-9 rounded-full" aria-label={`Añadir uno de ${a.nombre}`} onClick={() => sumar(1)}>
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <ContadorCantidad a={a} existencia={existencia} />
     </li>
   );
 }
@@ -199,20 +71,24 @@ function QueHayAqui({
   zona,
   articulos,
   cargando,
-  onAbrir,
+  elegido,
+  onElegir,
+  onAnadir,
   onNuevo,
 }: {
   zona: Elemento;
   articulos: Articulo[];
   cargando: boolean;
-  onAbrir: (a: Articulo, ponerAqui: boolean) => void;
+  elegido: string | null;
+  onElegir: (existenciaId: string) => void;
+  onAnadir: (a: Articulo) => void;
   onNuevo: () => void;
 }) {
   const aqui = articulos.filter((a) => a.existencias.some((e) => e.elementoId === zona.id));
   const otros = articulos.filter((a) => !a.existencias.some((e) => e.elementoId === zona.id));
 
   return (
-    <section className="mt-4">
+    <section>
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">Qué hay aquí</h3>
         <DropdownMenu>
@@ -230,7 +106,7 @@ function QueHayAqui({
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs text-muted-foreground">Uno que ya existe</DropdownMenuLabel>
                 {otros.map((a) => (
-                  <DropdownMenuItem key={a.id} onSelect={() => onAbrir(a, true)}>
+                  <DropdownMenuItem key={a.id} onSelect={() => onAnadir(a)}>
                     <span className="truncate">{a.nombre}</span>
                     <span className="ml-auto pl-2 text-xs text-muted-foreground">{a.categoria}</span>
                   </DropdownMenuItem>
@@ -245,20 +121,28 @@ function QueHayAqui({
         <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">No hay nada apuntado en esta zona.</p>
       )}
       {aqui.length > 0 && (
-        <ul className="divide-y rounded-lg border">
-          {aqui.map((a) => (
-            <FilaStock key={a.id} a={a} zona={zona} onAbrir={() => onAbrir(a, false)} />
-          ))}
+        <ul className="divide-y overflow-hidden rounded-lg border">
+          {aqui.map((a) => {
+            const e = a.existencias.find((x) => x.elementoId === zona.id)!;
+            return <FilaArticulo key={a.id} a={a} zona={zona} elegido={elegido === e.id} onElegir={() => onElegir(e.id)} />;
+          })}
         </ul>
       )}
     </section>
   );
 }
 
+/**
+ * Una zona del mapa, en una ventana en el medio: qué es, el armario de frente
+ * (si lo es) y lo que hay guardado. Lo que se toca se ve y se edita al lado.
+ * El nombre y la descripción de la zona los cambian los administradores.
+ */
 export function PanelZona({
   zona,
   articulos,
   cargando,
+  esAdmin,
+  categorias,
   onVolver,
   onAbrir,
   onNuevo,
@@ -266,45 +150,154 @@ export function PanelZona({
   zona: Elemento;
   articulos: Articulo[];
   cargando: boolean;
+  esAdmin: boolean;
+  categorias: string[];
   onVolver: () => void;
   onAbrir: (a: Articulo, ponerAqui: boolean) => void;
   onNuevo: () => void;
 }) {
+  const queryClient = useQueryClient();
   const sentido = textoSentido(zona);
+  const esArmario = zona.tipo === "estanteria" && zona.modelo === "informatica";
+  const [elegida, setElegida] = useState<string | null>(null);
+  const detalleRef = useRef<HTMLDivElement>(null);
+
+  const seleccion = elegida
+    ? articulos.flatMap((a) => a.existencias.filter((e) => e.id === elegida && e.elementoId === zona.id).map((e) => ({ a, e })))[0]
+    : undefined;
+  // Si lo elegido deja de estar aquí (lo han quitado), no se queda colgando
+  useEffect(() => {
+    if (elegida && !seleccion && !cargando) setElegida(null);
+  }, [elegida, seleccion, cargando]);
+
+  const elegir = (id: string | null) => {
+    setElegida(id);
+    // En el móvil el detalle queda debajo: se lleva a la vista
+    if (id && window.matchMedia("(max-width: 767px)").matches) {
+      window.setTimeout(() => {
+        const detalle = detalleRef.current;
+        const caja = detalle?.closest<HTMLElement>(".overflow-y-auto");
+        if (!detalle || !caja) return;
+        const arriba = caja.scrollTop + detalle.getBoundingClientRect().top - caja.getBoundingClientRect().top - 12;
+        caja.scrollTo({ top: arriba, behavior: "smooth" });
+      }, 80);
+    }
+  };
+
+  const guardarDeZona = async (cambios: CambiosZona) => {
+    try {
+      if (!(await guardarZona(zona, cambios))) {
+        toast.warning("Alguien acaba de cambiar esta zona", { description: "Ya ves lo de ahora." });
+        void queryClient.invalidateQueries({ queryKey: CLAVE_MAPA });
+        throw new Error("conflicto");
+      }
+      queryClient.setQueryData<Elemento[]>(CLAVE_MAPA, (lista) => lista?.map((x) => (x.id === zona.id ? { ...x, ...cambios } : x)));
+    } catch (err) {
+      if ((err as Error).message !== "conflicto") toast.error("No se ha podido guardar la zona", { description: (err as Error).message });
+      throw err;
+    }
+  };
+
   return (
-    <PanelLateral id={zona.id}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
+    <Dialog open onOpenChange={(abierta) => !abierta && onVolver()}>
+      <DialogContent
+        className={cn(
+          "flex max-h-[92dvh] w-[calc(100vw-1rem)] max-w-4xl flex-col gap-0 overflow-hidden rounded-xl p-0 sm:max-h-[88dvh]",
+          "[&>button:last-child]:right-3 [&>button:last-child]:top-3",
+        )}
+        // Esc mientras se escribe solo deja lo que había; no cierra la ventana
+        onEscapeKeyDown={(e) => {
+          if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) e.preventDefault();
+        }}
+        // Al abrir no se pone a escribir en el primer campo
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <DialogTitle className="sr-only">{zona.nombre}</DialogTitle>
+        <DialogDescription className="sr-only">Lo que hay en {zona.nombre} y sus datos</DialogDescription>
+
+        <header className="border-b px-5 pb-3 pt-4">
+          <div className="flex items-center gap-2 pr-8">
             <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: zona.color }} />
-            <h2 className="truncate text-lg font-semibold">{zona.nombre}</h2>
+            {esAdmin ? (
+              <TextoEditable
+                valor={zona.nombre}
+                obligatorio
+                etiqueta="Nombre de la zona"
+                className="text-xl font-semibold"
+                onGuardar={(nombre) => guardarDeZona({ nombre })}
+              />
+            ) : (
+              <h2 className="truncate text-xl font-semibold">{zona.nombre}</h2>
+            )}
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">{zona.categoria}</p>
+          <p className="mt-0.5 flex flex-wrap gap-x-2 pl-5 text-xs text-muted-foreground">
+            <span>{zona.categoria}</span>
+            <span>· {TIPOS[zona.tipo]}</span>
+            <span>· {referenciaDe(zona.area)}</span>
+            {sentido && <span>· {sentido}</span>}
+            {zona.muelle && <span>· Llega a {zona.muelle}</span>}
+          </p>
+          <div className="mt-2 pl-5">
+            <TextoEditable
+              valor={zona.descripcion}
+              soloLeer={!esAdmin}
+              multilinea
+              etiqueta="Descripción de la zona"
+              placeholder="Añade una descripción de esta zona…"
+              className="text-sm text-muted-foreground"
+              onGuardar={(descripcion) => guardarDeZona({ descripcion })}
+            />
+          </div>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          {esArmario && (
+            <div className="mb-5">
+              <ArmarioEditable zona={zona} articulos={articulos} esAdmin={esAdmin} elegida={elegida} onElegir={elegir} />
+            </div>
+          )}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <QueHayAqui
+              zona={zona}
+              articulos={articulos}
+              cargando={cargando}
+              elegido={elegida}
+              onElegir={(id) => elegir(elegida === id ? null : id)}
+              onAnadir={(a) => onAbrir(a, true)}
+              onNuevo={onNuevo}
+            />
+            <div ref={detalleRef} className="scroll-mt-4 rounded-lg border bg-muted/30 p-4">
+              {seleccion ? (
+                <DetalleArticulo
+                  key={seleccion.e.id}
+                  a={seleccion.a}
+                  existencia={seleccion.e}
+                  zona={zona}
+                  categorias={categorias}
+                  onMasOpciones={() => onAbrir(seleccion.a, false)}
+                />
+              ) : (
+                <div className="flex h-full min-h-[8rem] flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                  <MousePointerClick className="h-6 w-6 opacity-60" />
+                  {esArmario ? "Toca una caja o un artículo para ver y cambiar sus datos." : "Toca un artículo para ver y cambiar sus datos."}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <Button variant="ghost" size="icon" className="-mr-2 -mt-1 h-8 w-8 shrink-0" onClick={onVolver} aria-label="Volver a la nave">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      {zona.descripcion && <p className="mt-3 text-sm text-muted-foreground">{zona.descripcion}</p>}
-      <dl className="mt-3 divide-y rounded-lg border px-3">
-        <Dato etiqueta="Tipo">{TIPOS[zona.tipo]}</Dato>
-        {sentido && <Dato etiqueta="Sentido">{sentido}</Dato>}
-        {zona.muelle && <Dato etiqueta="Llega a">{zona.muelle}</Dato>}
-        <Dato etiqueta="Posición en el plano">{referenciaDe(zona.area)}</Dato>
-      </dl>
-      {zona.tipo === "estanteria" && zona.modelo === "informatica" && <ArmarioFrontal zona={zona} articulos={articulos} />}
-      <QueHayAqui zona={zona} articulos={articulos} cargando={cargando} onAbrir={onAbrir} onNuevo={onNuevo} />
-      <div className="mt-4 flex gap-2">
-        <Button className="flex-1" variant="secondary" onClick={onVolver}>
-          Volver a la nave
-        </Button>
-        <Button variant="outline" size="icon" asChild title="Historial de esta zona">
-          <Link to={`/historial?zona=${zona.id}`} aria-label="Historial de esta zona">
-            <History className="h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
-    </PanelLateral>
+
+        <footer className="flex gap-2 border-t px-5 py-3">
+          <Button className="flex-1" variant="secondary" onClick={onVolver}>
+            Volver a la nave
+          </Button>
+          <Button variant="outline" size="icon" asChild title="Historial de esta zona">
+            <Link to={`/historial?zona=${zona.id}`} aria-label="Historial de esta zona">
+              <History className="h-4 w-4" />
+            </Link>
+          </Button>
+        </footer>
+      </DialogContent>
+    </Dialog>
   );
 }
 

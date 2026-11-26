@@ -17,6 +17,7 @@ export type Database = {
       elementos_mapa: {
         Row: {
           almacen: boolean
+          baldas: number | null
           categoria: string
           clave: string
           mostrar_nombre: boolean
@@ -38,6 +39,7 @@ export type Database = {
         }
         Insert: {
           almacen?: boolean
+          baldas?: number | null
           categoria?: string
           clave: string
           mostrar_nombre?: boolean
@@ -59,6 +61,7 @@ export type Database = {
         }
         Update: {
           almacen?: boolean
+          baldas?: number | null
           categoria?: string
           clave?: string
           mostrar_nombre?: boolean
@@ -131,6 +134,7 @@ export type Database = {
           elemento_id: string | null
           id: string
           nota: string
+          posicion: number | null
           updated_at: string
         }
         Insert: {
@@ -141,6 +145,7 @@ export type Database = {
           elemento_id?: string | null
           id?: string
           nota?: string
+          posicion?: number | null
           updated_at?: string
         }
         Update: {
@@ -151,6 +156,7 @@ export type Database = {
           elemento_id?: string | null
           id?: string
           nota?: string
+          posicion?: number | null
           updated_at?: string
         }
         Relationships: [
